@@ -4,23 +4,44 @@ import path from 'path';
 // Define se estamos em modo de desenvolvimento ou produção
 const isDev = process.env.NODE_ENV === 'development';
 
+let win: BrowserWindow | null = null;
+
 function createWindow() {
-  // Cria a janela do navegador.
-  const win = new BrowserWindow({
+  if (win !== null) {
+    return; // Já existe uma janela aberta
+  }
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      // preload aqui no futuro 
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
   if (isDev) {
     win.loadURL('http://localhost:3000');
-    // Abre o DevTools automaticamente em modo de desenvolvimento.
     win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(__dirname, '../.output/public/index.html'));
   }
+  win.on('closed', () => {
+    win = null;
+  });
 }
+// ...existing code...
+
+app.whenReady().then(() => {
+  // Adicione este handler ANTES de criar a janela
+  // Ele vai ouvir o evento 'get-app-versions' do preload.ts
+  ipcMain.handle('get-app-versions', () => {
+    return {
+      node: process.versions.node,
+      chrome: process.versions.chrome,
+      electron: process.versions.electron,
+    };
+  });
+
+  createWindow();
+});
 
 // Este método será chamado quando o Electron terminar a inicialização
 // e estiver pronto para criar janelas do navegador.

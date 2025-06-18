@@ -2,13 +2,13 @@
   "name": "echo-browser",
   "private": true,
   "type": "module",
-  "main": "dist-electron/main.js",
-"scripts": {
-  "dev": "concurrently \"npm:dev:nuxt\" \"npm:dev:electron\"",
-  "dev:nuxt": "nuxi dev",
-  "dev:electron": "wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .",
-  "build": "nuxi build && electron-builder"
-},
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently \"npm:dev:nuxt\" \"npm:dev:electron\"",
+    "dev:nuxt": "nuxi dev",
+    "dev:electron": "tsc -p electron && wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .",
+    "build": "nuxi build && tsc -p electron && electron-builder"
+  },
   "dependencies": {
     "@nuxt/content": "^3.6.0",
     "@nuxt/eslint": "^1.4.1",

@@ -1,0 +1,11 @@
+// electron/tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "../dist-electron",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["./**/*.cts"] 
+}
