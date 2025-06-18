@@ -37,10 +37,13 @@
           >
             <div class="history-item-title">{{ item.title }}</div>
             <div class="history-item-url">{{ item.url }}</div>
-            <div class="history-item-time">
-              Visitado em: {{ formatTime(item.lastVisitedAt) }}
+             <div class="history-item-time">
+                {{ formatTime(item.lastVisitedAt) }}
             </div>
           </div>
+          <div class="history-item-time">
+                Visitado em: {{ formatFullDate(item.lastVisitedAt) }}
+            </div>
           <button 
             class="remove-item-btn"
             title="Remover do histórico"
@@ -155,6 +158,18 @@ function isSameDay(date1: Date, date2: Date): boolean {
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function formatFullDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   });

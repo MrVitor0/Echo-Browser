@@ -9,9 +9,22 @@
         @close="() => handleCloseTab(tab.id)"
       />
       
-      <button  title="Nova aba" class="new-tab-button" @click="handleNewTab">
-        +
-      </button>
+      <div class="tabs-actions">
+        <button 
+          class="new-tab-button" 
+          @click="handleNewTab" 
+          title="Nova aba"
+        >
+          +
+        </button>
+        <button 
+          class="new-private-tab-button" 
+          @click="handleNewPrivateTab" 
+          title="Nova aba privada"
+        >
+          🔒
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -41,6 +54,12 @@ function handleNewTab(): void {
   const newTabId = tabsManager.addTab();
   tabsManager.activateTab(newTabId);
 }
+
+// Novo handler para criar aba privada
+function handleNewPrivateTab(): void {
+  const newTabId = tabsManager.addPrivateTab();
+  tabsManager.activateTab(newTabId);
+}
 </script>
 
 <style scoped>
@@ -65,7 +84,13 @@ function handleNewTab(): void {
   min-width: min-content;
 }
 
-.new-tab-button {
+.tabs-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.new-tab-button, .new-private-tab-button {
   width: 28px;
   height: 28px;
   display: flex;
@@ -81,7 +106,12 @@ function handleNewTab(): void {
   transition: background-color 0.2s;
 }
 
-.new-tab-button:hover {
+.new-tab-button:hover, .new-private-tab-button:hover {
   background-color: #ccc;
+}
+
+.new-private-tab-button {
+  font-size: 14px;
+  color: #464066;
 }
 </style>

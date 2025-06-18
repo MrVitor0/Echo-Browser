@@ -1,28 +1,31 @@
 <template>
   <div 
     class="browser-tab" 
-    :class="{ 'active': tab.isActive }"
+    :class="{ 'active': tab.isActive, 'private': tab.isPrivate }"
     @click="handleTabClick"
   >
-    <div v-if="tab.favicon" class="favorite-icon">
-      <img :src="tab.favicon" alt="Favicon" class="favicon-img">
+    <!-- Indicador de navegação privada -->
+    <div v-if="tab.isPrivate" class="private-indicator" title="Navegação privada">
+      <span>🔒</span>
     </div>
-    <div v-else class="favorite-icon default-icon">
-      <span>🌐</span>
+    
+    <div class="favicon-container">
+      <img v-if="tab.favicon" :src="tab.favicon" alt="Favicon" class="favicon-img" />
+      <span v-else class="default-icon">{{ tab.isPrivate ? '🕵️' : '🌐' }}</span>
     </div>
     
     <div class="tab-title" :title="tab.title">
       {{ tab.title }}
     </div>
     
-    <div v-if="tab.isLoading" class="tab-loading">
+    <div class="tab-loading" v-if="tab.isLoading">
       <span class="loading-spinner">⟳</span>
     </div>
     
     <button 
       class="tab-close" 
-      :title="'Fechar ' + tab.title"
       @click.stop="handleCloseClick"
+      :title="'Fechar ' + tab.title"
     >
       ×
     </button>
@@ -78,7 +81,27 @@ function handleCloseClick(): void {
   z-index: 2;
 }
 
-.favorite-icon {
+/* Estilo para abas privadas */
+.browser-tab.private {
+  background-color: #37324A;
+  color: #e0e0e0;
+}
+
+.browser-tab.private:hover {
+  background-color: #433D5B;
+}
+
+.browser-tab.private.active {
+  background-color: #544D6B;
+}
+
+.private-indicator {
+  margin-right: 4px;
+  font-size: 10px;
+  color: #9C89B8;
+}
+
+.favicon-container {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,6 +114,11 @@ function handleCloseClick(): void {
 .favicon-img {
   width: 16px;
   height: 16px;
+  object-fit: contain;
+}
+
+.default-icon {
+  font-size: 14px;
 }
 
 .tab-title {
@@ -123,13 +151,15 @@ function handleCloseClick(): void {
   font-size: 14px;
   padding: 0;
   margin-left: 6px;
-  color: #666;
+  color: inherit;
+  opacity: 0.7;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .tab-close:hover {
-  background-color: #ccc;
+  background-color: rgba(0, 0, 0, 0.1);
+  opacity: 1;
 }
 
 @keyframes spin {

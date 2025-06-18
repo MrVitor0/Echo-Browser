@@ -1,9 +1,15 @@
 <template>
-  <div class="browser-container">
+  <div class="browser-container" :class="{ 'private-mode': activeTab?.isPrivate }">
     <!-- Container de tabs -->
     <TabsContainer />
-    
+
     <div class="toolbar">
+      <!-- Indicador de navegação privada -->
+      <div v-if="activeTab?.isPrivate" class="private-mode-indicator">
+        <span class="private-icon">🔒</span>
+        <span class="private-text">Navegação privada</span>
+      </div>
+      
       <button :disabled="!activeTab?.canGoBack" @click="handleGoBack">←</button>
       <button :disabled="!activeTab?.canGoForward" @click="handleGoForward">→</button>
       <button @click="handleReload">⟳</button>
@@ -12,8 +18,9 @@
         :value="urlBarText"
         @input="updateUrlBarText"
         @keyup.enter="handleNavigateToURLFromInput"
+        :class="{ 'private-input': activeTab?.isPrivate }"
       >
-      <button 
+      <button
         class="favorite-button"
         :class="{ 'active': isCurrentFavorite }"
         :title="isCurrentFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
@@ -21,14 +28,14 @@
       >
         ★
       </button>
-      <button 
+      <button
         class="history-button"
         title="Ver histórico"
         @click="showHistory = true"
       >
         ⌚
       </button>
-      <button 
+      <button
         class="toggle-favorites-button"
         title="Mostrar/esconder favoritos"
         :class="{ 'active': showFavoritesBar }"
@@ -39,18 +46,18 @@
     </div>
 
     <!-- Barra de favoritos -->
-    <FavoritesBar 
+    <FavoritesBar
       :show-favorites="showFavoritesBar"
       @navigate="handleNavigateToURL"
     />
-    
+
     <!-- Container de webviews (um para cada tab) -->
     <div class="webviews-container">
       <div
         v-for="tab in tabs"
         :key="tab.id"
         class="webview-wrapper"
-        :class="{ 'hidden': !tab.isActive }"
+        :class="{ hidden: !tab.isActive }"
       >
         <!-- Mostra página de erro quando houver erro -->
         <ErrorView
@@ -62,7 +69,7 @@
           @back="handleGoBack"
           @retry="() => handleRetry(tab.id)"
         />
-        
+
         <!-- Mostra webview quando não há erro -->
         <webview
           v-else
@@ -76,7 +83,11 @@
     </div>
 
     <!-- Modal de histórico -->
-    <div v-if="showHistory" class="modal-overlay" @click.self="showHistory = false">
+    <div
+      v-if="showHistory"
+      class="modal-overlay"
+      @click.self="showHistory = false"
+    >
       <div class="modal-content">
         <div class="modal-header">
           <button class="modal-close" @click="showHistory = false">×</button>
@@ -88,19 +99,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
-import { WebViewManager } from './components/WebViewManager';
-import type { WebViewElement } from './components/WebViewManager';
-import TabsContainer from './components/TabsContainer.vue';
-import FavoritesBar from './components/FavoritesBar.vue';
-import ErrorView from './components/ErrorView.vue';
-import History from './components/History.vue';
-import { useTabs } from './composables/useTabs';
-import { useFavorites } from './composables/useFavorites';
-import type { Tab } from './composables/useTabs';
-
+import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { WebViewManager } from "./components/WebViewManager";
+import type { WebViewElement } from "./components/WebViewManager";
+import TabsContainer from "./components/TabsContainer.vue";
+import FavoritesBar from "./components/FavoritesBar.vue";
+import ErrorView from "./components/ErrorView.vue";
+import History from "./components/History.vue";
+import { useTabs } from "./composables/useTabs";
+import { useFavorites } from "./composables/useFavorites";
+import type { Tab } from "./composables/useTabs";
 // Estados reativos
-const urlBarText = ref<string>('https://www.google.com');
+const urlBarText = ref<string>("https://www.google.com");
 const webviewRefs = ref<Array<HTMLElement>>([]);
 const showFavoritesBar = ref<boolean>(false);
 const isCurrentFavorite = ref<boolean>(false);
@@ -147,7 +157,7 @@ function toggleFavoritesBar(): void {
 function toggleFavorite(): void {
   const currentTab = activeTab.value;
   if (!currentTab) return;
-  
+
   if (isCurrentFavorite.value) {
     const favorite = favoritesManager.getFavoriteByUrl(currentTab.url);
     if (favorite) {
@@ -168,16 +178,16 @@ function toggleFavorite(): void {
 function handleWebviewReady(event: Event, tabId: string): void {
   const webview = event.target as WebViewElement;
   if (!webview) return;
-  
+
   webViewManager.initializeWebview(tabId, webview);
-  
+
   // Se esta for a tab ativa, atualiza o status de favorito
   const activeTabId = tabsManager.getActiveTabId();
   if (activeTabId === tabId) {
     try {
       updateFavoriteStatus(webview.getURL());
     } catch (err) {
-      console.error('Erro ao obter URL do webview:', err);
+      console.error("Erro ao obter URL do webview:", err);
     }
   }
 }
@@ -190,7 +200,7 @@ function handleNavigateToURLFromInput(): void {
 // Função para lidar com a navegação a partir de diferentes fontes
 function handleNavigateToURL(urlOrEvent: string | Event): void {
   // Verifica se o parâmetro recebido é uma string (URL) ou um evento
-  if (typeof urlOrEvent === 'string') {
+  if (typeof urlOrEvent === "string") {
     // É uma URL direta (da barra de favoritos)
     urlBarText.value = urlOrEvent;
     webViewManager.navigateToURL(urlOrEvent);
@@ -218,29 +228,62 @@ function handleRetry(tabId: string): void {
 }
 
 onMounted(() => {
-  console.log('Componente montado');
-  
+  console.log("Componente montado");
+
   // Garantir que há pelo menos uma tab ativa
   tabsManager.ensureActiveTab();
-  
+
   // Carregar preferências de UI, como mostrar favoritos
-  showFavoritesBar.value = localStorage.getItem('showFavoritesBar') === 'true';
+  showFavoritesBar.value = localStorage.getItem("showFavoritesBar") === "true";
 });
 
 watch(showFavoritesBar, (newValue: boolean) => {
   // Salva a preferência
-  localStorage.setItem('showFavoritesBar', newValue.toString());
+  localStorage.setItem("showFavoritesBar", newValue.toString());
 });
 </script>
 
 <style>
-body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-.browser-container { display: flex; flex-direction: column; height: 100vh; }
-.toolbar { display: flex; padding: 8px;background-color: #f0f0f0; }
-.toolbar button { margin-right: 6px; padding: 6px 12px; }
-.url-bar { flex-grow: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+@font-face {
+  font-family: "EchoBrowser";
+  src:  url("./assets/fonts/OpenSans-Regular.ttf") format("truetype");
+  font-display: swap;
+  font-weight: normal;
+  font-style: normal;
+}
 
-.favorite-button, .toggle-favorites-button, .history-button {
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "EchoBrowser", sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.browser-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.toolbar {
+  display: flex;
+  padding: 8px;
+  background-color: #f0f0f0;
+}
+.toolbar button {
+  margin-right: 6px;
+  padding: 6px 12px;
+}
+.url-bar {
+  flex-grow: 1;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.favorite-button,
+.toggle-favorites-button,
+.history-button {
   background: none;
   border: none;
   font-size: 16px;
@@ -251,10 +294,14 @@ body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   align-items: center;
   justify-content: center;
   color: #777;
-  transition: color 0.2s, transform 0.1s;
+  transition:
+    color 0.2s,
+    transform 0.1s;
 }
 
-.favorite-button:hover, .toggle-favorites-button:hover, .history-button:hover {
+.favorite-button:hover,
+.toggle-favorites-button:hover,
+.history-button:hover {
   color: #555;
   transform: scale(1.1);
 }
@@ -339,5 +386,63 @@ body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 .modal-close:hover {
   color: #000;
+}
+
+/* Estilos para modo privado */
+.private-mode .toolbar {
+  background-color: #37324A;
+  color: #e0e0e0;
+}
+
+.private-mode .url-bar.private-input {
+  background-color: #2C2640;
+  border-color: #544D6B;
+  color: #e0e0e0;
+}
+
+.private-mode-indicator {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  margin-right: 10px;
+  border-radius: 4px;
+  background-color: #544D6B;
+  color: #e0e0e0;
+}
+
+.private-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.private-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.private-mode .favorite-button,
+.private-mode .toggle-favorites-button,
+.private-mode .history-button {
+  color: #9C89B8;
+}
+
+.private-mode .favorite-button:hover,
+.private-mode .toggle-favorites-button:hover,
+.private-mode .history-button:hover {
+  color: #BEAAE1;
+}
+
+.private-mode .favorite-button.active {
+  color: #BEAAE1;
+}
+
+.private-mode button {
+  background-color: #544D6B;
+  color: #e0e0e0;
+}
+
+.private-mode button:disabled {
+  background-color: #2C2640;
+  color: #7A718F;
 }
 </style>

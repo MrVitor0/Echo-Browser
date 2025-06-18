@@ -10,7 +10,8 @@ export interface Tab {
   canGoForward: boolean;
   favicon?: string;
   isLoading: boolean;
-  // Novo estado para erros
+  // Novo campo para indicar modo privado/anônimo
+  isPrivate: boolean;
   error?: {
     code: number;
     url: string;
@@ -25,7 +26,8 @@ export interface TabsState {
 
 export interface UseTabsReturn {
   state: Ref<TabsState>;
-  addTab: (url?: string) => string;
+  addTab: (url?: string, isPrivate?: boolean) => string;
+  addPrivateTab: (url?: string) => string; // Novo método para abas privadas
   closeTab: (tabId: string) => void;
   activateTab: (tabId: string) => void;
   updateTabTitle: (tabId: string, title: string) => void;
@@ -33,13 +35,13 @@ export interface UseTabsReturn {
   updateTabNavigationState: (tabId: string, canGoBack: boolean, canGoForward: boolean) => void;
   updateTabFavicon: (tabId: string, favicon?: string) => void;
   updateTabLoadingState: (tabId: string, isLoading: boolean) => void;
+  setTabError: (tabId: string, error: Tab['error'] | undefined) => void;
+  clearTabError: (tabId: string) => void;
   ensureActiveTab: () => string;
   getTabs: () => Tab[];
   getActiveTab: () => Tab | undefined;
   getTabById: (id: string) => Tab | undefined;
   getActiveTabId: () => string | null;
-  setTabError: (tabId: string, error: Tab['error'] | undefined) => void;
-  clearTabError: (tabId: string) => void;
 }
 
 // Contador para IDs únicos
@@ -70,17 +72,18 @@ export const useTabs = (): UseTabsReturn => {
     }
   };
 
-  // Ações para manipular as tabs
-  const addTab = (url: string = 'https://www.google.com'): string => {
+  // Adicionar uma nova tab (agora com suporte para modo privado)
+  const addTab = (url: string = 'https://www.google.com', isPrivate: boolean = false): string => {
     const id = `tab-${tabIdCounter++}`;
     const newTab: Tab = {
       id,
-      title: 'Nova Tab',
+      title: isPrivate ? 'Nova aba privada' : 'Nova aba',
       url,
       isActive: false,
       canGoBack: false,
       canGoForward: false,
-      isLoading: true
+      isLoading: true,
+      isPrivate
     };
     
     state.value = {
@@ -90,6 +93,12 @@ export const useTabs = (): UseTabsReturn => {
     return id;
   };
 
+  // Método dedicado para criar uma aba privada
+  const addPrivateTab = (url: string = 'https://www.google.com'): string => {
+    return addTab(url, true);
+  };
+
+  // Fechar uma tab
   const closeTab = (tabId: string): void => {
     const index = state.value.tabs.findIndex(tab => tab.id === tabId);
     if (index === -1) return;
@@ -118,6 +127,7 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Ativar uma tab
   const activateTab = (tabId: string): void => {
     const newTabs = state.value.tabs.map(tab => ({
       ...tab,
@@ -130,6 +140,7 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Atualizar o título da tab
   const updateTabTitle = (tabId: string, title: string): void => {
     const newTabs = state.value.tabs.map(tab => 
       tab.id === tabId
@@ -143,6 +154,7 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Atualizar a URL da tab
   const updateTabUrl = (tabId: string, url: string): void => {
     const newTabs = state.value.tabs.map(tab => 
       tab.id === tabId
@@ -156,6 +168,7 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Atualizar o estado de navegação da tab
   const updateTabNavigationState = (tabId: string, canGoBack: boolean, canGoForward: boolean): void => {
     const newTabs = state.value.tabs.map(tab => 
       tab.id === tabId
@@ -169,6 +182,7 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Atualizar o favicon da tab
   const updateTabFavicon = (tabId: string, favicon?: string): void => {
     const newTabs = state.value.tabs.map(tab => 
       tab.id === tabId
@@ -182,6 +196,7 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Atualizar o estado de carregamento da tab
   const updateTabLoadingState = (tabId: string, isLoading: boolean): void => {
     const newTabs = state.value.tabs.map(tab => 
       tab.id === tabId
@@ -214,6 +229,7 @@ export const useTabs = (): UseTabsReturn => {
     setTabError(tabId, undefined);
   };
 
+  // Criar uma tab inicial se não houver nenhuma
   const ensureActiveTab = (): string => {
     if (state.value.tabs.length === 0) {
       const id = addTab();
@@ -241,6 +257,7 @@ export const useTabs = (): UseTabsReturn => {
   return {
     state,
     addTab,
+    addPrivateTab,
     closeTab,
     activateTab,
     updateTabTitle,

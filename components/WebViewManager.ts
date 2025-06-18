@@ -53,6 +53,20 @@ export class WebViewManager {
    */
   public initializeWebview(tabId: string, webviewElement: WebViewElement): void {
     this.webviews.set(tabId, webviewElement);
+    
+    // Obter a tab para verificar se é privada
+    const tab = this.tabsManager.getTabById(tabId);
+    
+    // Configurar modo de partição para navegação privada
+    if (tab?.isPrivate) {
+      // Configura uma partição única para cada aba privada para evitar compartilhamento de cookies
+      const partition = `private-${tabId}`;
+      webviewElement.setAttribute('partition', partition);
+      
+      // Configura webview para modo privado
+      webviewElement.setAttribute('allowpopups', 'true');
+    }
+    
     this.setupEventListeners(tabId, webviewElement);
     
     // Se esta for a tab ativa, atualize a barra de URL
@@ -96,8 +110,12 @@ export class WebViewManager {
           const title = webviewElement.getTitle();
           const favicon = this.tabsManager.getTabById(tabId)?.favicon;
           
-          // Adiciona ao histórico
-          this.historyManager.addToHistory(url, title, favicon);
+          // Verifica se a tab é privada antes de adicionar ao histórico
+          const tab = this.tabsManager.getTabById(tabId);
+          if (tab && !tab.isPrivate) {
+            // Só adiciona ao histórico se NÃO for navegação privada
+            this.historyManager.addToHistory(url, title, favicon);
+          }
         } catch (err) {
           console.error('Erro ao adicionar página ao histórico:', err);
         }
