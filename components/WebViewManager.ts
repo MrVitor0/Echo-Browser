@@ -1,5 +1,7 @@
 import type { Ref } from 'vue';
 import { useTabs } from '../composables/useTabs';
+import { useFavorites } from '../composables/useFavorites';
+import { ErrorPageService } from '../services/ErrorPageService';
 
 // Interface para o elemento WebView do Electron
 export interface WebViewElement extends HTMLElement {
@@ -28,6 +30,7 @@ export class WebViewManager {
   private readonly currentUrlRef: Ref<string>;
   private readonly defaultSearchEngine: string = 'https://www.google.com/search?q=';
   private readonly tabsManager = useTabs();
+  private readonly favoritesManager = useFavorites();
 
   constructor(currentUrlRef: Ref<string>) {
     this.currentUrlRef = currentUrlRef;
@@ -123,6 +126,31 @@ export class WebViewManager {
         this.currentUrlRef.value = url;
       }
     });
+
+    // Adicionando evento para detectar falhas no carregamento (404, etc)
+    webviewElement.addEventListener('did-fail-load', async (event: any) => {
+      const { errorCode, errorDescription, validatedURL } = event;
+      
+      // Códigos comuns: ERR_NAME_NOT_RESOLVED (-105), ERR_CONNECTION_REFUSED (-102), etc.
+      if (errorCode !== -3 && validatedURL) { // -3 é cancelamento, normalmente não é erro real
+        // Atualiza a tab para exibir informações de erro
+        this.tabsManager.updateTabTitle(tabId, 'Erro de carregamento');
+        this.tabsManager.updateTabLoadingState(tabId, false);
+        
+        try {
+          // Gera a página de erro HTML usando nosso serviço
+          const errorPageHtml = await ErrorPageService.generateErrorPageHtml(
+            validatedURL, 
+            errorCode
+          );
+          
+          // Carrega a página de erro no webview
+          webviewElement.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorPageHtml)}`);
+        } catch (err) {
+          console.error('Erro ao gerar página de erro:', err);
+        }
+      }
+    });
   }
 
   /**
@@ -176,7 +204,7 @@ export class WebViewManager {
     if (!activeTabId) return;
 
     try {
-      const input = text.trim();
+      const input = text?.trim();
       if (!input) return;
       
       let finalUrl: string;
@@ -266,6 +294,135 @@ export class WebViewManager {
       }
     } catch (err) {
       console.error('Erro ao avançar página:', err);
+    }
+  }
+
+  /**
+   * Verifica se a URL atual está nos favoritos
+   */
+  public isCurrentUrlFavorite(): boolean {
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return false;
+    
+    const tab = this.tabsManager.getTabById(activeTabId);
+    if (!tab) return false;
+    
+    return this.favoritesManager.isFavorite(tab.url);
+  }
+
+  /**
+   * Adiciona ou remove a URL atual dos favoritos
+   */
+  public toggleFavorite(): boolean {
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return false;
+    
+    const tab = this.tabsManager.getTabById(activeTabId);
+    if (!tab) return false;
+    
+    const isFav = this.favoritesManager.isFavorite(tab.url);
+    
+    if (isFav) {
+      // Encontrar e remover o favorito
+      const favorite = this.favoritesManager.getFavoriteByUrl(tab.url);
+      if (favorite) {
+        this.favoritesManager.removeFavorite(favorite.id);
+      }
+      return false;
+    } else {
+      // Adicionar aos favoritos
+      this.favoritesManager.addFavorite(tab.title, tab.url, tab.favicon);
+      return true;
+    }
+  }
+  
+
+  /**
+   * Volta para a página anterior (apenas na tab ativa)
+   */
+  public goBack(): void {
+    const webviewElement = this.getActiveWebview();
+    if (!webviewElement) return;
+    
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return;
+    
+    try {
+      if (webviewElement.canGoBack()) {
+        webviewElement.goBack();
+        // Marca a tab como carregando
+        this.tabsManager.updateTabLoadingState(activeTabId, true);
+        // Atualiza o estado de navegação após a operação
+        setTimeout(() => {
+          this.updateTabNavigationState(activeTabId, webviewElement);
+        }, 100);
+      }
+    } catch (err) {
+      console.error('Erro ao voltar página:', err);
+    }
+  }
+
+  /**
+   * Avança para a próxima página (apenas na tab ativa)
+   */
+  public goForward(): void {
+    const webviewElement = this.getActiveWebview();
+    if (!webviewElement) return;
+    
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return;
+    
+    try {
+      if (webviewElement.canGoForward()) {
+        webviewElement.goForward();
+        // Marca a tab como carregando
+        this.tabsManager.updateTabLoadingState(activeTabId, true);
+        // Atualiza o estado de navegação após a operação
+        setTimeout(() => {
+          this.updateTabNavigationState(activeTabId, webviewElement);
+        }, 100);
+      }
+    } catch (err) {
+      console.error('Erro ao avançar página:', err);
+    }
+  }
+
+  /**
+   * Verifica se a URL atual está nos favoritos
+   */
+  public isCurrentUrlFavorite(): boolean {
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return false;
+    
+    const tab = this.tabsManager.getTabById(activeTabId);
+    if (!tab) return false;
+    
+    return this.favoritesManager.isFavorite(tab.url);
+  }
+
+  /**
+   * Adiciona ou remove a URL atual dos favoritos
+   */
+  public toggleFavorite(): boolean {
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return false;
+    
+    const tab = this.tabsManager.getTabById(activeTabId);
+    if (!tab) return false;
+    
+    const isFav = this.favoritesManager.isFavorite(tab.url);
+    
+    if (isFav) {
+      // Encontrar e remover o favorito
+      const favorite = this.favoritesManager.getFavoriteByUrl(tab.url);
+      if (favorite) {
+        this.favoritesManager.removeFavorite(favorite.id);
+      }
+      return false;
+    } else {
+      // Adicionar aos favoritos
+      this.favoritesManager.addFavorite(tab.title, tab.url, tab.favicon);
+      return true;
     }
   }
 }
