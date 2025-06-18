@@ -131,4 +131,27 @@ function handleRemoveFavorite(id: string): void {
 .favorite-remove:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
+
+/* Estilos para tema escuro */
+:global(.dark-mode) .favorites-bar {
+  background-color: #292a2d;
+  border-bottom-color: #3c4043;
+}
+
+:global(.dark-mode) .favorite-item {
+  background-color: #3c4043;
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .favorite-item:hover {
+  background-color: #4a4c50;
+}
+
+:global(.dark-mode) .favorite-remove {
+  color: #8ab4f8;
+}
+
+:global(.dark-mode) .favorite-remove:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
 </style>

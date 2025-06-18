@@ -1,5 +1,8 @@
 <template>
-  <div class="browser-container" :class="{ 'private-mode': activeTab?.isPrivate }">
+  <div class="browser-container" :class="{ 
+    'private-mode': activeTab?.isPrivate,
+    'dark-mode': isDarkMode 
+  }">
     <!-- Container de tabs -->
     <TabsContainer />
 
@@ -52,6 +55,13 @@
         @click="showHistory = true"
       >
         ⌚
+      </button>
+      <button
+        class="theme-toggle-button"
+        :title="isDarkMode ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
+        @click="toggleDarkMode"
+      >
+        {{ isDarkMode ? '☀️' : '🌙' }}
       </button>
       <button
         class="toggle-favorites-button"
@@ -134,6 +144,7 @@ const webviewRefs = ref<Array<HTMLElement>>([]);
 const showFavoritesBar = ref<boolean>(false);
 const isCurrentFavorite = ref<boolean>(false);
 const showHistory = ref<boolean>(false);
+const isDarkMode = ref<boolean>(false);
 
 // Obtém o gerenciador de tabs e favoritos
 const tabsManager = useTabs();
@@ -291,14 +302,59 @@ function handleWebviewReady(event: Event, tabId: string): void {
   webViewManager.initializeWebview(tabId, webview);
 }
 
+// Função para alternar entre tema claro e escuro
+function toggleDarkMode(): void {
+  isDarkMode.value = !isDarkMode.value;
+  // Salva a preferência
+  localStorage.setItem("darkMode", isDarkMode.value.toString());
+  
+  // Aplica o tema ao document para afetar componentes que talvez não tenham acesso direto
+  if (isDarkMode.value) {
+    document.documentElement.classList.add('dark-mode');
+  } else {
+    document.documentElement.classList.remove('dark-mode');
+  }
+}
+
+// Função para alternar favorito da página atual - Corrigido para salvar título e favicon
+function toggleFavorite(): void {
+  if (!activeTab.value) return;
+  
+  const url = activeTab.value.url;
+  
+  if (favoritesManager.isFavorite(url)) {
+    const favorite = favoritesManager.getFavoriteByUrl(url);
+    if (favorite) {
+      favoritesManager.removeFavorite(favorite.id);
+      isCurrentFavorite.value = false;
+    }
+  } else {
+    // Corrigido para passar o título e favicon corretos da tab ativa
+    favoritesManager.addFavorite(
+      activeTab.value.title,
+      url,
+      activeTab.value.favicon
+    );
+    isCurrentFavorite.value = true;
+  }
+}
+
 onMounted(() => {
   console.log("Componente montado");
 
   // Garantir que há pelo menos uma tab ativa
   tabsManager.ensureActiveTab();
 
-  // Carregar preferências de UI, como mostrar favoritos
+  // Carregar preferências de UI
   showFavoritesBar.value = localStorage.getItem("showFavoritesBar") === "true";
+  
+  // Carregar preferência de tema
+  isDarkMode.value = localStorage.getItem("darkMode") === "true";
+  
+  // Aplicar tema global se necessário
+  if (isDarkMode.value) {
+    document.documentElement.classList.add('dark-mode');
+  }
 });
 
 watch(showFavoritesBar, (newValue: boolean) => {
@@ -314,20 +370,6 @@ watch(activeTab, () => {
 // Função para alternar a barra de favoritos
 function toggleFavoritesBar(): void {
   showFavoritesBar.value = !showFavoritesBar.value;
-}
-
-// Função para alternar favorito da página atual
-function toggleFavorite(): void {
-  if (!activeTab.value) return;
-  const url = activeTab.value.url;
-  if (favoritesManager.isFavorite(url)) {
-    favoritesManager.removeFavorite(url);
-    isCurrentFavorite.value = false;
-  } else {
-    // Adiciona aos favoritos com URL e título (ajuste conforme necessário)
-    favoritesManager.addFavorite(url, activeTab.value.title || url);
-    isCurrentFavorite.value = true;
-  }
 }
 </script>
 
@@ -540,5 +582,91 @@ html {
   position: relative;
   flex-grow: 1;
   width: 100%;
+}
+
+/* Botão de alternar tema */
+.theme-toggle-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  transition: color 0.2s, transform 0.1s;
+}
+
+.theme-toggle-button:hover {
+  color: #555;
+  transform: scale(1.1);
+}
+
+/* Estilos do tema escuro */
+.dark-mode {
+  color: #e4e4e4;
+  background-color: #202124;
+}
+
+.dark-mode .toolbar {
+  background-color: #292a2d;
+  color: #e4e4e4;
+}
+
+.dark-mode .url-bar {
+  background-color: #3c4043;
+  border-color: #5f6368;
+  color: #e4e4e4;
+}
+
+.dark-mode button {
+  color: #e4e4e4;
+  background-color: #3c4043;
+}
+
+.dark-mode button:disabled {
+  opacity: 0.5;
+  background-color: #202124;
+}
+
+.dark-mode .favorite-button,
+.dark-mode .toggle-favorites-button,
+.dark-mode .history-button,
+.dark-mode .theme-toggle-button {
+  color: #8ab4f8;
+}
+
+.dark-mode .favorite-button:hover,
+.dark-mode .toggle-favorites-button:hover,
+.dark-mode .history-button:hover,
+.dark-mode .theme-toggle-button:hover {
+  color: #aecbfa;
+}
+
+.dark-mode .favorite-button.active {
+  color: #fdd663;
+}
+
+.dark-mode .toggle-favorites-button.active {
+  color: #8ab4f8;
+}
+
+.dark-mode .webviews-container {
+  background-color: #202124;
+}
+
+.dark-mode .modal-content {
+  background-color: #292a2d;
+  color: #e4e4e4;
+}
+
+.dark-mode .modal-close {
+  color: #8ab4f8;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #3c4043;
 }
 </style>

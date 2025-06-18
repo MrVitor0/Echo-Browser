@@ -138,16 +138,35 @@ export class WebViewManager {
       }
     });
 
-    // Evento para título da página foi atualizado
-    webviewElement.addEventListener('page-title-updated', (e: WebviewNavigationEvent) => {
-      const title = e.title || 'Nova Tab';
+    // Título da página foi atualizado
+    webviewElement.addEventListener('page-title-updated', (e: any) => {
+      const title = e.title || 'Sem título';
       this.tabsManager.updateTabTitle(tabId, title);
+      
+      // Também atualiza o título do favorito, se existir
+      const url = webviewElement.getURL();
+      if (this.favoritesManager.isFavorite(url)) {
+        const favorite = this.favoritesManager.getFavoriteByUrl(url);
+        if (favorite) {
+          this.favoritesManager.updateFavorite(favorite.id, { title });
+        }
+      }
     });
 
-    // Evento para favicon foi atualizado
-    webviewElement.addEventListener('page-favicon-updated', (e: WebviewNavigationEvent) => {
+    // Favicon foi atualizado
+    webviewElement.addEventListener('page-favicon-updated', (e: any) => {
       if (e.favicons && e.favicons.length > 0) {
-        this.tabsManager.updateTabFavicon(tabId, e.favicons[0]);
+        const favicon = e.favicons[0];
+        this.tabsManager.updateTabFavicon(tabId, favicon);
+        
+        // Também atualiza o favicon do favorito, se existir
+        const url = webviewElement.getURL();
+        if (this.favoritesManager.isFavorite(url)) {
+          const favorite = this.favoritesManager.getFavoriteByUrl(url);
+          if (favorite) {
+            this.favoritesManager.updateFavorite(favorite.id, { favicon });
+          }
+        }
       }
     });
 
@@ -395,4 +414,3 @@ export class WebViewManager {
     }
   }
 }
- 

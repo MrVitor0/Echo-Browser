@@ -159,4 +159,28 @@ function highlightMatch(suggestion: string, query: string): string {
 .suggestions-dropdown.private :deep(.highlight) {
   color: #BEAAE1;
 }
+
+/* Adicione estilos para tema escuro */
+:global(.dark-mode) .suggestions-dropdown {
+  background-color: #292a2d;
+  border-color: #3c4043;
+}
+
+:global(.dark-mode) .suggestion-item {
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .suggestion-item:hover,
+:global(.dark-mode) .suggestion-item.selected {
+  background-color: #3c4043;
+}
+
+:global(.dark-mode) .loading-spinner {
+  border-color: #3c4043;
+  border-top-color: #8ab4f8;
+}
+
+:global(.dark-mode) :deep(.highlight) {
+  color: #8ab4f8;
+}
 </style>
