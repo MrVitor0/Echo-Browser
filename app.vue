@@ -22,6 +22,13 @@
         ★
       </button>
       <button 
+        class="history-button"
+        title="Ver histórico"
+        @click="showHistory = true"
+      >
+        ⌚
+      </button>
+      <button 
         class="toggle-favorites-button"
         title="Mostrar/esconder favoritos"
         :class="{ 'active': showFavoritesBar }"
@@ -67,6 +74,16 @@
         />
       </div>
     </div>
+
+    <!-- Modal de histórico -->
+    <div v-if="showHistory" class="modal-overlay" @click.self="showHistory = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button class="modal-close" @click="showHistory = false">×</button>
+        </div>
+        <History @navigate="handleNavigateToURL" @close="showHistory = false" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -77,6 +94,7 @@ import type { WebViewElement } from './components/WebViewManager';
 import TabsContainer from './components/TabsContainer.vue';
 import FavoritesBar from './components/FavoritesBar.vue';
 import ErrorView from './components/ErrorView.vue';
+import History from './components/History.vue';
 import { useTabs } from './composables/useTabs';
 import { useFavorites } from './composables/useFavorites';
 import type { Tab } from './composables/useTabs';
@@ -86,6 +104,7 @@ const urlBarText = ref<string>('https://www.google.com');
 const webviewRefs = ref<Array<HTMLElement>>([]);
 const showFavoritesBar = ref<boolean>(false);
 const isCurrentFavorite = ref<boolean>(false);
+const showHistory = ref<boolean>(false);
 
 // Obtém o gerenciador de tabs e favoritos
 const tabsManager = useTabs();
@@ -221,7 +240,7 @@ body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 .toolbar button { margin-right: 6px; padding: 6px 12px; }
 .url-bar { flex-grow: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
 
-.favorite-button, .toggle-favorites-button {
+.favorite-button, .toggle-favorites-button, .history-button {
   background: none;
   border: none;
   font-size: 16px;
@@ -235,7 +254,7 @@ body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   transition: color 0.2s, transform 0.1s;
 }
 
-.favorite-button:hover, .toggle-favorites-button:hover {
+.favorite-button:hover, .toggle-favorites-button:hover, .history-button:hover {
   color: #555;
   transform: scale(1.1);
 }
@@ -246,6 +265,10 @@ body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 .toggle-favorites-button.active {
   color: #1a73e8;
+}
+
+.history-button {
+  font-size: 18px;
 }
 
 .webviews-container {
@@ -270,5 +293,51 @@ body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
   width: 100%;
   height: 100%;
   border: none;
+}
+
+/* Estilos para o modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 80%;
+  height: 80%;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.modal-close:hover {
+  color: #000;
 }
 </style>

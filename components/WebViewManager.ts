@@ -1,6 +1,7 @@
-import type {  Ref } from 'vue';
+import type { Ref } from 'vue';
 import { useTabs } from '../composables/useTabs';
 import { useFavorites } from '../composables/useFavorites';
+import { useHistory } from '../composables/useHistory';
 
 // Interface para o elemento WebView do Electron
 export interface WebViewElement extends HTMLElement {
@@ -30,6 +31,7 @@ export class WebViewManager {
   private readonly defaultSearchEngine: string = 'https://www.google.com/search?q=';
   private readonly tabsManager = useTabs();
   private readonly favoritesManager = useFavorites();
+  private readonly historyManager = useHistory();
 
   constructor(currentUrlRef: Ref<string>) {
     this.currentUrlRef = currentUrlRef;
@@ -83,9 +85,23 @@ export class WebViewManager {
       this.tabsManager.updateTabLoadingState(tabId, true);
     });
 
-    // Evento para quando terminar de carregar
+    // Evento para quando terminar de carregar uma página com sucesso
     webviewElement.addEventListener('did-stop-loading', () => {
       this.tabsManager.updateTabLoadingState(tabId, false);
+      
+      // Verifica se não é uma página de erro ou data URL
+      const url = webviewElement.getURL();
+      if (!url.startsWith('data:')) {
+        try {
+          const title = webviewElement.getTitle();
+          const favicon = this.tabsManager.getTabById(tabId)?.favicon;
+          
+          // Adiciona ao histórico
+          this.historyManager.addToHistory(url, title, favicon);
+        } catch (err) {
+          console.error('Erro ao adicionar página ao histórico:', err);
+        }
+      }
     });
 
     // Evento para quando a URL mudar
