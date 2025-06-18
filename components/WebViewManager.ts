@@ -34,11 +34,34 @@ export class WebViewManager {
   }
 
   /**
+   * Obtém o webview da tab ativa
+   * @returns O webview da tab ativa ou null se não encontrado
+   */
+  private getActiveWebview(): WebViewElement | null {
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (!activeTabId) return null;
+    
+    return this.webviews.get(activeTabId) || null;
+  }
+
+  /**
    * Inicializa um webview para uma tab específica
    */
   public initializeWebview(tabId: string, webviewElement: WebViewElement): void {
     this.webviews.set(tabId, webviewElement);
     this.setupEventListeners(tabId, webviewElement);
+    
+    // Se esta for a tab ativa, atualize a barra de URL
+    const activeTabId = this.tabsManager.getActiveTabId();
+    if (activeTabId === tabId) {
+      setTimeout(() => {
+        try {
+          this.currentUrlRef.value = webviewElement.getURL();
+        } catch (err) {
+          console.error("Erro ao obter URL inicial do webview:", err);
+        }
+      }, 100);
+    }
   }
 
   /**
@@ -143,14 +166,14 @@ export class WebViewManager {
   }
 
   /**
-   * Navega para uma URL específica ou pesquisa no Google
+   * Navega para uma URL específica ou pesquisa no Google (apenas na tab ativa)
    */
   public navigateToURL(text: string): void {
+    const webviewElement = this.getActiveWebview();
+    if (!webviewElement) return;
+    
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
-    const webviewElement = this.webviews.get(activeTabId);
-    if (!webviewElement) return;
 
     try {
       const input = text.trim();
@@ -170,41 +193,51 @@ export class WebViewManager {
       webviewElement.loadURL(finalUrl);
       this.currentUrlRef.value = finalUrl;
       this.tabsManager.updateTabUrl(activeTabId, finalUrl);
+      // Marca a tab como carregando
+      this.tabsManager.updateTabLoadingState(activeTabId, true);
     } catch (err) {
       console.error('Erro ao navegar para a URL ou realizar pesquisa:', err);
     }
   }
 
   /**
-   * Recarrega a página atual
+   * Recarrega a página atual (apenas na tab ativa)
    */
   public reload(): void {
+    const webviewElement = this.getActiveWebview();
+    if (!webviewElement) return;
+    
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
     
-    const webviewElement = this.webviews.get(activeTabId);
-    if (!webviewElement) return;
-    
     try {
       webviewElement.reload();
+      // Marca a tab como carregando
+      this.tabsManager.updateTabLoadingState(activeTabId, true);
     } catch (err) {
       console.error('Erro ao recarregar página:', err);
     }
   }
 
   /**
-   * Volta para a página anterior
+   * Volta para a página anterior (apenas na tab ativa)
    */
   public goBack(): void {
+    const webviewElement = this.getActiveWebview();
+    if (!webviewElement) return;
+    
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
-    const webviewElement = this.webviews.get(activeTabId);
-    if (!webviewElement) return;
     
     try {
       if (webviewElement.canGoBack()) {
         webviewElement.goBack();
+        // Marca a tab como carregando
+        this.tabsManager.updateTabLoadingState(activeTabId, true);
+        // Atualiza o estado de navegação após a operação
+        setTimeout(() => {
+          this.updateTabNavigationState(activeTabId, webviewElement);
+        }, 100);
       }
     } catch (err) {
       console.error('Erro ao voltar página:', err);
@@ -212,18 +245,24 @@ export class WebViewManager {
   }
 
   /**
-   * Avança para a próxima página
+   * Avança para a próxima página (apenas na tab ativa)
    */
   public goForward(): void {
+    const webviewElement = this.getActiveWebview();
+    if (!webviewElement) return;
+    
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
-    const webviewElement = this.webviews.get(activeTabId);
-    if (!webviewElement) return;
     
     try {
       if (webviewElement.canGoForward()) {
         webviewElement.goForward();
+        // Marca a tab como carregando
+        this.tabsManager.updateTabLoadingState(activeTabId, true);
+        // Atualiza o estado de navegação após a operação
+        setTimeout(() => {
+          this.updateTabNavigationState(activeTabId, webviewElement);
+        }, 100);
       }
     } catch (err) {
       console.error('Erro ao avançar página:', err);

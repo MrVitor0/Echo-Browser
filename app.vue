@@ -81,37 +81,18 @@ function handleNavigateToURL() {
 }
 
 function handleReload() {
-  // Tenta usar a API do Electron primeiro, senão usa o WebView diretamente
-  if (window.electronAPI) {
-    window.electronAPI.reload().catch(err => {
-      console.error('Erro ao usar API do Electron para recarregar:', err);
-      webViewManager.reload();
-    });
-  } else {
-    webViewManager.reload();
-  }
+  // Sempre usa o WebViewManager que agora gerencia as tabs corretamente
+  webViewManager.reload();
 }
 
 function handleGoBack() {
-  if (window.electronAPI) {
-    window.electronAPI.goBack().catch(err => {
-      console.error('Erro ao usar API do Electron para voltar:', err);
-      webViewManager.goBack();
-    });
-  } else {
-    webViewManager.goBack();
-  }
+  // Sempre usa o WebViewManager que agora gerencia as tabs corretamente
+  webViewManager.goBack();
 }
 
 function handleGoForward() {
-  if (window.electronAPI) {
-    window.electronAPI.goForward().catch(err => {
-      console.error('Erro ao usar API do Electron para avançar:', err);
-      webViewManager.goForward();
-    });
-  } else {
-    webViewManager.goForward();
-  }
+  // Sempre usa o WebViewManager que agora gerencia as tabs corretamente
+  webViewManager.goForward();
 }
 
 onMounted(() => {
