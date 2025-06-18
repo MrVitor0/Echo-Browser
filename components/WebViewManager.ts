@@ -104,14 +104,22 @@ export class WebViewManager {
     });
 
     // Título da página foi atualizado
-    webviewElement.addEventListener('page-title-updated', (e: any) => {
-      this.tabsManager.updateTabTitle(tabId, e.title);
+    interface PageTitleUpdatedEvent extends Event {
+      title: string;
+    }
+    webviewElement.addEventListener('page-title-updated', (e: Event) => {
+      const event = e as PageTitleUpdatedEvent;
+      this.tabsManager.updateTabTitle(tabId, event.title);
     });
 
     // Favicon foi atualizado
-    webviewElement.addEventListener('page-favicon-updated', (e: any) => {
-      if (e.favicons && e.favicons.length > 0) {
-        this.tabsManager.updateTabFavicon(tabId, e.favicons[0]);
+    interface PageFaviconUpdatedEvent extends Event {
+      favicons: string[];
+    }
+    webviewElement.addEventListener('page-favicon-updated', (e: Event) => {
+      const event = e as unknown as PageFaviconUpdatedEvent;
+      if (event.favicons && event.favicons.length > 0) {
+        this.tabsManager.updateTabFavicon(tabId, event.favicons[0]);
       }
     });
 
@@ -127,9 +135,8 @@ export class WebViewManager {
       }
     });
 
-    // Adicionando evento para detectar falhas no carregamento (404, etc)
-    webviewElement.addEventListener('did-fail-load', async (event: any) => {
-      const { errorCode, errorDescription, validatedURL } = event;
+    webviewElement.addEventListener('did-fail-load', async (event: Event) => {
+      const { errorCode, validatedURL } = event as unknown as { errorCode: number; validatedURL: string };
       
       // Códigos comuns: ERR_NAME_NOT_RESOLVED (-105), ERR_CONNECTION_REFUSED (-102), etc.
       if (errorCode !== -3 && validatedURL) { // -3 é cancelamento, normalmente não é erro real
@@ -246,96 +253,6 @@ export class WebViewManager {
       console.error('Erro ao recarregar página:', err);
     }
   }
-
-  /**
-   * Volta para a página anterior (apenas na tab ativa)
-   */
-  public goBack(): void {
-    const webviewElement = this.getActiveWebview();
-    if (!webviewElement) return;
-    
-    const activeTabId = this.tabsManager.getActiveTabId();
-    if (!activeTabId) return;
-    
-    try {
-      if (webviewElement.canGoBack()) {
-        webviewElement.goBack();
-        // Marca a tab como carregando
-        this.tabsManager.updateTabLoadingState(activeTabId, true);
-        // Atualiza o estado de navegação após a operação
-        setTimeout(() => {
-          this.updateTabNavigationState(activeTabId, webviewElement);
-        }, 100);
-      }
-    } catch (err) {
-      console.error('Erro ao voltar página:', err);
-    }
-  }
-
-  /**
-   * Avança para a próxima página (apenas na tab ativa)
-   */
-  public goForward(): void {
-    const webviewElement = this.getActiveWebview();
-    if (!webviewElement) return;
-    
-    const activeTabId = this.tabsManager.getActiveTabId();
-    if (!activeTabId) return;
-    
-    try {
-      if (webviewElement.canGoForward()) {
-        webviewElement.goForward();
-        // Marca a tab como carregando
-        this.tabsManager.updateTabLoadingState(activeTabId, true);
-        // Atualiza o estado de navegação após a operação
-        setTimeout(() => {
-          this.updateTabNavigationState(activeTabId, webviewElement);
-        }, 100);
-      }
-    } catch (err) {
-      console.error('Erro ao avançar página:', err);
-    }
-  }
-
-  /**
-   * Verifica se a URL atual está nos favoritos
-   */
-  public isCurrentUrlFavorite(): boolean {
-    const activeTabId = this.tabsManager.getActiveTabId();
-    if (!activeTabId) return false;
-    
-    const tab = this.tabsManager.getTabById(activeTabId);
-    if (!tab) return false;
-    
-    return this.favoritesManager.isFavorite(tab.url);
-  }
-
-  /**
-   * Adiciona ou remove a URL atual dos favoritos
-   */
-  public toggleFavorite(): boolean {
-    const activeTabId = this.tabsManager.getActiveTabId();
-    if (!activeTabId) return false;
-    
-    const tab = this.tabsManager.getTabById(activeTabId);
-    if (!tab) return false;
-    
-    const isFav = this.favoritesManager.isFavorite(tab.url);
-    
-    if (isFav) {
-      // Encontrar e remover o favorito
-      const favorite = this.favoritesManager.getFavoriteByUrl(tab.url);
-      if (favorite) {
-        this.favoritesManager.removeFavorite(favorite.id);
-      }
-      return false;
-    } else {
-      // Adicionar aos favoritos
-      this.favoritesManager.addFavorite(tab.title, tab.url, tab.favicon);
-      return true;
-    }
-  }
-  
 
   /**
    * Volta para a página anterior (apenas na tab ativa)

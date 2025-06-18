@@ -2,7 +2,7 @@
   <div class="error-page">
     <div class="error-container">
       <div class="error-icon">🔍</div>
-      <h1>{{ title || 'Página não encontrada' }}</h1>
+      <h1>{{ title }}</h1>
       <p>Não foi possível carregar a página: <strong>{{ url }}</strong></p>
       <p v-if="errorCode">Código de erro: {{ errorCode }}</p>
       <div class="error-suggestions">
@@ -14,38 +14,31 @@
         </ul>
       </div>
       <div class="error-actions">
-        <button @click="goBack" class="action-button">Voltar</button>
-        <button @click="retry" class="action-button primary">Tentar novamente</button>
+        <button class="action-button" @click="goBack" >Voltar</button>
+        <button class="action-button primary" @click="retry" >Tentar novamente</button>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ErrorPage',
-  props: {
-    url: {
-      type: String,
-      required: true
-    },
-    errorCode: {
-      type: Number,
-      default: null
-    },
-    title: {
-      type: String,
-      default: 'Página não encontrada'
-    }
-  },
-  methods: {
-    goBack() {
-      window.history.back();
-    },
-    retry() {
-      window.location.reload();
-    }
-  }
+<script setup lang="ts">
+// Definição de props tipadas
+const props = defineProps<{
+  url: string;
+  errorCode?: number;
+  title?: string;
+}>();
+
+// Valor padrão para título
+const title = props.title || 'Página não encontrada';
+
+// Métodos
+function goBack(): void {
+  window.history.back();
+}
+
+function retry(): void {
+  window.location.reload();
 }
 </script>
 
@@ -115,6 +108,10 @@ p {
   background-color: #1a73e8;
   color: white;
 }
+.action-button.primary:hover {
+  background-color: #1766ca;
+}
+
 .action-button.primary:hover {
   background-color: #1766ca;
 }

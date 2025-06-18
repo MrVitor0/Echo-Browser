@@ -1,4 +1,5 @@
 import { useState } from '#app';
+import type { Ref } from 'vue';
 
 export interface Favorite {
   id: string;
@@ -8,7 +9,16 @@ export interface Favorite {
   addedAt: number; // timestamp
 }
 
-export const useFavorites = () => {
+export interface UseFavoritesReturn {
+  favorites: Ref<Favorite[]>;
+  addFavorite: (title: string, url: string, favicon?: string) => Favorite;
+  removeFavorite: (id: string) => void;
+  isFavorite: (url: string) => boolean;
+  updateFavorite: (id: string, data: Partial<Favorite>) => void;
+  getFavoriteByUrl: (url: string) => Favorite | undefined;
+}
+
+export const useFavorites = (): UseFavoritesReturn => {
   // Usando useState do Nuxt para persistência
   const favorites = useState<Favorite[]>('browser-favorites', () => []);
 

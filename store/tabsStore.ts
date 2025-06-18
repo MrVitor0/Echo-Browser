@@ -1,4 +1,4 @@
-import { reactive, readonly, ref } from 'vue';
+import { reactive, readonly } from 'vue';
 
 export interface Tab {
   id: string;

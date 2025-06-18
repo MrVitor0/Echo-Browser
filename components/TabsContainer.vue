@@ -9,7 +9,7 @@
         @close="() => handleCloseTab(tab.id)"
       />
       
-      <button class="new-tab-button" @click="handleNewTab" title="Nova aba">
+      <button  title="Nova aba" class="new-tab-button" @click="handleNewTab">
         +
       </button>
     </div>
@@ -20,22 +20,24 @@
 import { computed } from 'vue';
 import BrowserTab from './BrowserTab.vue';
 import { useTabs } from '../composables/useTabs';
+import type { Tab } from '../composables/useTabs';
 
 // Usa o composable para gerenciar as tabs
 const tabsManager = useTabs();
 
 // Computed property para as tabs
-const tabs = computed(() => tabsManager.getTabs());
+const tabs = computed<Tab[]>(() => tabsManager.getTabs());
 
-function handleActivateTab(tabId: string) {
+// Handlers dos eventos
+function handleActivateTab(tabId: string): void {
   tabsManager.activateTab(tabId);
 }
 
-function handleCloseTab(tabId: string) {
+function handleCloseTab(tabId: string): void {
   tabsManager.closeTab(tabId);
 }
 
-function handleNewTab() {
+function handleNewTab(): void {
   const newTabId = tabsManager.addTab();
   tabsManager.activateTab(newTabId);
 }

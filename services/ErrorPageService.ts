@@ -5,14 +5,14 @@ import { createSSRApp, h } from 'vue';
 /**
  * Serviço para gerar páginas de erro HTML a partir de componentes Vue
  */
-export class ErrorPageService {
+export const ErrorPageService = {
   /**
    * Gera HTML para uma página de erro 404
    * @param url URL que causou o erro
    * @param errorCode Código de erro opcional
    * @returns Promise com o HTML da página de erro
    */
-  public static async generateErrorPageHtml(url: string, errorCode?: number): Promise<string> {
+  async generateErrorPageHtml(url: string, errorCode?: number): Promise<string> {
     try {
       // Criamos um app Vue para renderização do servidor
       const app = createSSRApp({
@@ -32,7 +32,7 @@ export class ErrorPageService {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
             body, html { margin: 0; padding: 0; height: 100%; }
-            ${this.extractStyles()}
+            ${ErrorPageService.extractStyles()}
           </style>
         </head>
         <body>
@@ -48,30 +48,54 @@ export class ErrorPageService {
       console.error('Erro ao gerar página de erro:', error);
       
       // Fallback para uma página simples se houver erro na renderização
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Página não encontrada</title>
-        </head>
-        <body style="font-family: system-ui; text-align: center; padding: 50px;">
-          <h1>Página não encontrada</h1>
-          <p>Não foi possível carregar: ${url}</p>
-          ${errorCode ? `<p>Código de erro: ${errorCode}</p>` : ''}
-          <button onclick="window.history.back()">Voltar</button>
-          <button onclick="window.location.reload()">Tentar novamente</button>
-        </body>
-        </html>
-      `;
+      return ErrorPageService.createSimpleErrorPage(url, errorCode);
     }
-  }
+  },
+
+  /**
+   * Cria uma página de erro simples como fallback
+   * @param url URL que causou o erro
+   * @param errorCode Código de erro opcional
+   * @returns HTML simples da página de erro
+   */
+  createSimpleErrorPage(url: string, errorCode?: number): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Página não encontrada</title>
+      </head>
+      <body style="font-family: system-ui; text-align: center; padding: 50px;">
+        <h1>Página não encontrada</h1>
+        <p>Não foi possível carregar: ${ErrorPageService.escapeHtml(url)}</p>
+        ${errorCode ? `<p>Código de erro: ${errorCode}</p>` : ''}
+        <button onclick="window.history.back()">Voltar</button>
+        <button onclick="window.location.reload()">Tentar novamente</button>
+      </body>
+      </html>
+    `;
+  },
+
+  /**
+   * Escapa caracteres HTML para evitar XSS
+   * @param html String a ser escapada
+   * @returns String escapada segura para HTML
+   */
+  escapeHtml(html: string): string {
+    return html
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  },
 
   /**
    * Extrai os estilos do componente ErrorPage
    * Nota: Em uma implementação mais completa, usaríamos um bundler para isso
    */
-  private static extractStyles(): string {
+  extractStyles(): string {
     // Como não podemos realmente extrair os estilos do componente Vue em runtime,
     // retornamos os estilos mais essenciais aqui
     return `
@@ -112,4 +136,4 @@ export class ErrorPageService {
       .primary:hover { background-color: #1766ca; }
     `;
   }
-}
+};

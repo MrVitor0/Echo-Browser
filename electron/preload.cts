@@ -1,6 +1,6 @@
 // electron/preload.cts
 import { contextBridge, ipcRenderer } from 'electron';
-import { IElectronAPI } from '../types/electron';
+import type { IElectronAPI } from '../types/electron';
 
 // Implementação tipada da API do Electron
 const electronAPI: IElectronAPI = {

@@ -4,10 +4,10 @@
     :class="{ 'active': tab.isActive }"
     @click="handleTabClick"
   >
-    <div class="tab-favicon" v-if="tab.favicon">
-      <img :src="tab.favicon" alt="Favicon" class="favicon-img" />
+    <div v-if="tab.favicon" class="favorite-icon">
+      <img :src="tab.favicon" alt="Favicon" class="favicon-img">
     </div>
-    <div v-else class="tab-favicon default-icon">
+    <div v-else class="favorite-icon default-icon">
       <span>🌐</span>
     </div>
     
@@ -15,14 +15,14 @@
       {{ tab.title }}
     </div>
     
-    <div class="tab-loading" v-if="tab.isLoading">
+    <div v-if="tab.isLoading" class="tab-loading">
       <span class="loading-spinner">⟳</span>
     </div>
     
     <button 
       class="tab-close" 
-      @click.stop="handleCloseClick"
       :title="'Fechar ' + tab.title"
+      @click.stop="handleCloseClick"
     >
       ×
     </button>
@@ -30,23 +30,25 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import type { Tab } from '../composables/useTabs';
 
-const props = defineProps<{
-  tab: Tab
+// Define props tipadas
+defineProps<{
+  tab: Tab;
 }>();
 
+// Define eventos com tipos
 const emit = defineEmits<{
-  (e: 'activate'): void,
-  (e: 'close'): void
+  activate: [];
+  close: [];
 }>();
 
-function handleTabClick() {
+// Handlers de eventos
+function handleTabClick(): void {
   emit('activate');
 }
 
-function handleCloseClick() {
+function handleCloseClick(): void {
   emit('close');
 }
 </script>
@@ -76,7 +78,7 @@ function handleCloseClick() {
   z-index: 2;
 }
 
-.tab-favicon {
+.favorite-icon {
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,5 +1,5 @@
 <template>
-  <div class="favorites-bar" v-if="showFavorites">
+  <div v-if="showFavorites" class="favorites-bar" >
     <div class="favorites-container">
       <div 
         v-for="favorite in favorites" 
@@ -8,16 +8,16 @@
         @click="handleFavoriteClick(favorite)"
       >
         <div class="favorite-icon">
-          <img v-if="favorite.favicon" :src="favorite.favicon" alt="" />
+          <img v-if="favorite.favicon" :src="favorite.favicon" alt="">
           <span v-else>🌐</span>
         </div>
         <div class="favorite-title" :title="favorite.title">
           {{ favorite.title }}
         </div>
         <button 
+          title="Remover dos favoritos"
           class="favorite-remove" 
           @click.stop="handleRemoveFavorite(favorite.id)"
-          title="Remover dos favoritos"
         >
           ×
         </button>
@@ -27,25 +27,29 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
 import { useFavorites } from '../composables/useFavorites';
 import type { Favorite } from '../composables/useFavorites';
 
-const props = defineProps<{
+// Definir corretamente as props com TypeScript
+defineProps<{
   showFavorites: boolean;
 }>();
 
+// Definir os emits com tipos corretos
 const emit = defineEmits<{
-  (e: 'navigate', url: string): void;
+  navigate: [url: string];
 }>();
 
+// Usar o composable de favoritos
 const { favorites, removeFavorite } = useFavorites();
 
-function handleFavoriteClick(favorite: Favorite) {
+// Handler para clique em um favorito
+function handleFavoriteClick(favorite: Favorite): void {
   emit('navigate', favorite.url);
 }
 
-function handleRemoveFavorite(id: string) {
+// Handler para remover um favorito
+function handleRemoveFavorite(id: string): void {
   removeFavorite(id);
 }
 </script>
