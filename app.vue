@@ -13,13 +13,31 @@
       <button :disabled="!activeTab?.canGoBack" @click="handleGoBack">←</button>
       <button :disabled="!activeTab?.canGoForward" @click="handleGoForward">→</button>
       <button @click="handleReload">⟳</button>
-      <input
-        class="url-bar"
-        :value="urlBarText"
-        @input="updateUrlBarText"
-        @keyup.enter="handleNavigateToURLFromInput"
-        :class="{ 'private-input': activeTab?.isPrivate }"
-      >
+      <div class="url-bar-container">
+        <input
+          ref="urlBarRef"
+          class="url-bar"
+          :class="{ 'private-input': activeTab?.isPrivate }"
+          :value="urlBarText"
+          @input="handleUrlBarInput"
+          @keyup.enter="handleNavigateToURLFromInput"
+          @keydown.down.prevent="handleSuggestionNavDown"
+          @keydown.up.prevent="handleSuggestionNavUp"
+          @blur="handleUrlBarBlur"
+          @focus="handleUrlBarFocus"
+        >
+        <!-- Componente de sugestões -->
+        <SearchSuggestions
+          :suggestions="suggestions"
+          :selected-index="selectedSuggestionIndex"
+          :show-suggestions="showSuggestions"
+          :loading="loadingSuggestions"
+          :is-private-mode="!!activeTab?.isPrivate"
+          :current-query="urlBarText"
+          @select="handleSuggestionSelect"
+          @highlight="handleSuggestionHighlight"
+        />
+      </div>
       <button
         class="favorite-button"
         :class="{ 'active': isCurrentFavorite }"
@@ -77,7 +95,7 @@
           ref="webviewRefs"
           class="webview-content"
           :src="tab.url"
-          @dom-ready="(event: Event) => handleWebviewReady(event, tab.id)"
+          @dom-ready="(event) => handleWebviewReady(event, tab.id)"
         />
       </div>
     </div>
@@ -101,13 +119,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { WebViewManager } from "./components/WebViewManager";
-import type { WebViewElement } from "./components/WebViewManager";
 import TabsContainer from "./components/TabsContainer.vue";
 import FavoritesBar from "./components/FavoritesBar.vue";
 import ErrorView from "./components/ErrorView.vue";
 import History from "./components/History.vue";
+import SearchSuggestions from "./components/SearchSuggestions.vue";
 import { useTabs } from "./composables/useTabs";
 import { useFavorites } from "./composables/useFavorites";
+import { useSuggestions } from "./composables/useSuggestions";
 import type { Tab } from "./composables/useTabs";
 // Estados reativos
 const urlBarText = ref<string>("https://www.google.com");
@@ -142,59 +161,96 @@ function updateFavoriteStatus(url: string): void {
   isCurrentFavorite.value = favoritesManager.isFavorite(url);
 }
 
-// Função para atualizar o texto da barra de URL
-function updateUrlBarText(event: Event): void {
+// Referência para o input da barra de URL
+const urlBarRef = ref<HTMLInputElement | null>(null);
+
+// Setup do sistema de sugestões
+const { 
+  suggestions,
+  loading: loadingSuggestions,
+  selectedIndex: selectedSuggestionIndex,
+  showSuggestions,
+  fetchSuggestions,
+  selectSuggestion,
+  selectPrevious,
+  selectNext,
+  clearSuggestions
+} = useSuggestions();
+
+// Função para lidar com input na barra de URL
+function handleUrlBarInput(event: Event): void {
   const input = event.target as HTMLInputElement;
-  urlBarText.value = input.value;
-}
-
-// Toggle da barra de favoritos
-function toggleFavoritesBar(): void {
-  showFavoritesBar.value = !showFavoritesBar.value;
-}
-
-// Adiciona ou remove a página atual dos favoritos
-function toggleFavorite(): void {
-  const currentTab = activeTab.value;
-  if (!currentTab) return;
-
-  if (isCurrentFavorite.value) {
-    const favorite = favoritesManager.getFavoriteByUrl(currentTab.url);
-    if (favorite) {
-      favoritesManager.removeFavorite(favorite.id);
-      isCurrentFavorite.value = false;
-    }
-  } else {
-    favoritesManager.addFavorite(
-      currentTab.title,
-      currentTab.url,
-      currentTab.favicon
-    );
-    isCurrentFavorite.value = true;
-  }
-}
-
-// Handler para quando um webview termina de carregar
-function handleWebviewReady(event: Event, tabId: string): void {
-  const webview = event.target as WebViewElement;
-  if (!webview) return;
-
-  webViewManager.initializeWebview(tabId, webview);
-
-  // Se esta for a tab ativa, atualiza o status de favorito
-  const activeTabId = tabsManager.getActiveTabId();
-  if (activeTabId === tabId) {
-    try {
-      updateFavoriteStatus(webview.getURL());
-    } catch (err) {
-      console.error("Erro ao obter URL do webview:", err);
+  const newValue = input.value;
+  
+  // Só atualiza e busca se o valor realmente mudou
+  if (newValue !== urlBarText.value) {
+    urlBarText.value = newValue;
+    
+    // Busca sugestões apenas se não estiver em uma aba privada
+    if (!activeTab.value?.isPrivate) {
+      fetchSuggestions(newValue);
     }
   }
 }
 
-// Função específica para lidar com navegação a partir do input da barra de URL
+// Função para lidar com seleção de sugestão
+function handleSuggestionSelect(suggestion: string): void {
+  if (suggestion) {
+    console.log("Navegando para sugestão:", suggestion);
+    urlBarText.value = suggestion;
+    clearSuggestions();
+    // Navegar diretamente aqui, sem chamar handleNavigateToURLFromInput
+    webViewManager.navigateToURL(suggestion);
+  }
+}
+
+// Função para lidar com hover em uma sugestão
+function handleSuggestionHighlight(index: number): void {
+  selectSuggestion(index);
+}
+
+// Função para navegar para baixo nas sugestões
+function handleSuggestionNavDown(): void {
+  if (showSuggestions.value) {
+    const selected = selectNext();
+    if (selected) {
+      urlBarText.value = selected;
+    }
+  }
+}
+
+// Função para navegar para cima nas sugestões
+function handleSuggestionNavUp(): void {
+  if (showSuggestions.value) {
+    const selected = selectPrevious();
+    if (selected) {
+      urlBarText.value = selected;
+    }
+  }
+}
+
+// Função para lidar com o foco na barra de URL
+function handleUrlBarFocus(): void {
+  if (urlBarText.value && !activeTab.value?.isPrivate) {
+    fetchSuggestions(urlBarText.value);
+  }
+}
+
+// Função para lidar com a perda de foco na barra de URL
+function handleUrlBarBlur(): void {
+  // Pequeno atraso para permitir que os cliques nas sugestões funcionem
+  setTimeout(() => {
+    clearSuggestions();
+  }, 200);
+}
+
+// Override da função existente
 function handleNavigateToURLFromInput(): void {
-  webViewManager.navigateToURL(urlBarText.value);
+  if (urlBarText.value) {
+    console.log("Navegando pelo input:", urlBarText.value);
+    webViewManager.navigateToURL(urlBarText.value);
+    clearSuggestions();
+  }
 }
 
 // Função para lidar com a navegação a partir de diferentes fontes
@@ -202,10 +258,12 @@ function handleNavigateToURL(urlOrEvent: string | Event): void {
   // Verifica se o parâmetro recebido é uma string (URL) ou um evento
   if (typeof urlOrEvent === "string") {
     // É uma URL direta (da barra de favoritos)
+    console.log("Navegando para URL:", urlOrEvent);
     urlBarText.value = urlOrEvent;
     webViewManager.navigateToURL(urlOrEvent);
   } else {
     // É um evento, usamos o valor atual da barra de URL
+    console.log("Navegando via evento:", urlBarText.value);
     webViewManager.navigateToURL(urlBarText.value);
   }
 }
@@ -227,6 +285,12 @@ function handleRetry(tabId: string): void {
   webViewManager.retryLoadingPage(tabId);
 }
 
+// Handler para o evento dom-ready do webview
+function handleWebviewReady(event: Event, tabId: string): void {
+  const webview = event.target as HTMLElement;
+  webViewManager.initializeWebview(tabId, webview);
+}
+
 onMounted(() => {
   console.log("Componente montado");
 
@@ -241,6 +305,30 @@ watch(showFavoritesBar, (newValue: boolean) => {
   // Salva a preferência
   localStorage.setItem("showFavoritesBar", newValue.toString());
 });
+
+// Limpar sugestões ao mudar de tab
+watch(activeTab, () => {
+  clearSuggestions();
+});
+
+// Função para alternar a barra de favoritos
+function toggleFavoritesBar(): void {
+  showFavoritesBar.value = !showFavoritesBar.value;
+}
+
+// Função para alternar favorito da página atual
+function toggleFavorite(): void {
+  if (!activeTab.value) return;
+  const url = activeTab.value.url;
+  if (favoritesManager.isFavorite(url)) {
+    favoritesManager.removeFavorite(url);
+    isCurrentFavorite.value = false;
+  } else {
+    // Adiciona aos favoritos com URL e título (ajuste conforme necessário)
+    favoritesManager.addFavorite(url, activeTab.value.title || url);
+    isCurrentFavorite.value = true;
+  }
+}
 </script>
 
 <style>
@@ -275,10 +363,11 @@ html {
   padding: 6px 12px;
 }
 .url-bar {
-  flex-grow: 1;
+  width: 100%;
   padding: 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .favorite-button,
@@ -444,5 +533,12 @@ html {
 .private-mode button:disabled {
   background-color: #2C2640;
   color: #7A718F;
+}
+
+/* Estilos para o container da barra de URL com sugestões */
+.url-bar-container {
+  position: relative;
+  flex-grow: 1;
+  width: 100%;
 }
 </style>

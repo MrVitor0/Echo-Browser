@@ -21,4 +21,9 @@ export default defineNuxtConfig({
       ],
     },
   },
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => ["webview"].includes(tag),
+    },
+  },
 });

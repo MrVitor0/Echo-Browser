@@ -9,6 +9,8 @@ export interface IElectronAPI {
   reload: () => Promise<boolean>;
   goBack: () => Promise<boolean>;
   goForward: () => Promise<boolean>;
+  // Nova função para sugestões de pesquisa
+  getSearchSuggestions: (query: string) => Promise<Array<{ phrase: string }>>;
 }
 
 declare global {
