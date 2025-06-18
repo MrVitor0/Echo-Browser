@@ -10,6 +10,12 @@ export interface Tab {
   canGoForward: boolean;
   favicon?: string;
   isLoading: boolean;
+  // Novo estado para erros
+  error?: {
+    code: number;
+    url: string;
+    description?: string;
+  };
 }
 
 export interface TabsState {
@@ -32,6 +38,8 @@ export interface UseTabsReturn {
   getActiveTab: () => Tab | undefined;
   getTabById: (id: string) => Tab | undefined;
   getActiveTabId: () => string | null;
+  setTabError: (tabId: string, error: Tab['error'] | undefined) => void;
+  clearTabError: (tabId: string) => void;
 }
 
 // Contador para IDs únicos
@@ -187,6 +195,25 @@ export const useTabs = (): UseTabsReturn => {
     };
   };
 
+  // Atualiza o estado de erro de uma tab
+  const setTabError = (tabId: string, error: Tab['error'] | undefined): void => {
+    const newTabs = state.value.tabs.map(tab => 
+      tab.id === tabId
+        ? { ...tab, error }
+        : tab
+    );
+    
+    state.value = {
+      ...state.value,
+      tabs: newTabs
+    };
+  };
+
+  // Limpa o erro de uma tab
+  const clearTabError = (tabId: string): void => {
+    setTabError(tabId, undefined);
+  };
+
   const ensureActiveTab = (): string => {
     if (state.value.tabs.length === 0) {
       const id = addTab();
@@ -221,6 +248,8 @@ export const useTabs = (): UseTabsReturn => {
     updateTabNavigationState,
     updateTabFavicon,
     updateTabLoadingState,
+    setTabError,
+    clearTabError,
     ensureActiveTab,
     getTabs,
     getActiveTab,

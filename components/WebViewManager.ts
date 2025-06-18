@@ -1,7 +1,6 @@
-import type { Ref } from 'vue';
+import type {  Ref } from 'vue';
 import { useTabs } from '../composables/useTabs';
 import { useFavorites } from '../composables/useFavorites';
-import { ErrorPageService } from '../services/ErrorPageService';
 
 // Interface para o elemento WebView do Electron
 export interface WebViewElement extends HTMLElement {
@@ -78,85 +77,78 @@ export class WebViewManager {
    * Configura os event listeners para um webview específico
    */
   private setupEventListeners(tabId: string, webviewElement: WebViewElement): void {
-    const events: WebViewEvent[] = [
-      'did-start-loading',
-      'did-stop-loading',
-      'did-navigate',
-      'did-navigate-in-page',
-      'dom-ready'
-    ];
-
-    // Atualiza o estado de navegação quando qualquer desses eventos ocorrer
-    events.forEach(event => {
-      webviewElement.addEventListener(event, () => {
-        this.updateTabNavigationState(tabId, webviewElement);
-      });
-    });
-
-    // Começou a carregar
+    // Evento para limpar erros quando a navegação começar
     webviewElement.addEventListener('did-start-loading', () => {
+      this.tabsManager.setTabError(tabId, undefined);
       this.tabsManager.updateTabLoadingState(tabId, true);
     });
 
-    // Terminou de carregar
+    // Evento para quando terminar de carregar
     webviewElement.addEventListener('did-stop-loading', () => {
       this.tabsManager.updateTabLoadingState(tabId, false);
     });
 
-    // Título da página foi atualizado
-    interface PageTitleUpdatedEvent extends Event {
-      title: string;
-    }
-    webviewElement.addEventListener('page-title-updated', (e: Event) => {
-      const event = e as PageTitleUpdatedEvent;
-      this.tabsManager.updateTabTitle(tabId, event.title);
-    });
-
-    // Favicon foi atualizado
-    interface PageFaviconUpdatedEvent extends Event {
-      favicons: string[];
-    }
-    webviewElement.addEventListener('page-favicon-updated', (e: Event) => {
-      const event = e as unknown as PageFaviconUpdatedEvent;
-      if (event.favicons && event.favicons.length > 0) {
-        this.tabsManager.updateTabFavicon(tabId, event.favicons[0]);
-      }
-    });
-
-    // URL foi atualizada
+    // Evento para quando a URL mudar
     webviewElement.addEventListener('did-navigate', () => {
       const url = webviewElement.getURL();
-      this.tabsManager.updateTabUrl(tabId, url);
       
-      // Atualiza a URL na barra de endereço se esta tab estiver ativa
-      const activeTab = this.tabsManager.getActiveTab();
-      if (activeTab && activeTab.id === tabId) {
-        this.currentUrlRef.value = url;
+      // Só atualiza a URL se não for uma data URL
+      if (!url.startsWith('data:')) {
+        this.tabsManager.updateTabUrl(tabId, url);
+        
+        // Atualiza a URL na barra de endereço se esta tab estiver ativa
+        const activeTab = this.tabsManager.getActiveTab();
+        if (activeTab && activeTab.id === tabId) {
+          this.currentUrlRef.value = url;
+        }
       }
     });
 
-    webviewElement.addEventListener('did-fail-load', async (event: Event) => {
-      const { errorCode, validatedURL } = event as unknown as { errorCode: number; validatedURL: string };
+    // Evento para título da página foi atualizado
+    webviewElement.addEventListener('page-title-updated', (e: WebviewNavigationEvent) => {
+      const title = e.title || 'Nova Tab';
+      this.tabsManager.updateTabTitle(tabId, title);
+    });
+
+    // Evento para favicon foi atualizado
+    webviewElement.addEventListener('page-favicon-updated', (e: WebviewNavigationEvent) => {
+      if (e.favicons && e.favicons.length > 0) {
+        this.tabsManager.updateTabFavicon(tabId, e.favicons[0]);
+      }
+    });
+
+    // Evento de erro de carregamento
+    webviewElement.addEventListener('did-fail-load', (e: WebviewNavigationEvent) => {
+      const { errorCode, errorDescription, validatedURL } = e;
       
-      // Códigos comuns: ERR_NAME_NOT_RESOLVED (-105), ERR_CONNECTION_REFUSED (-102), etc.
-      if (errorCode !== -3 && validatedURL) { // -3 é cancelamento, normalmente não é erro real
-        // Atualiza a tab para exibir informações de erro
-        this.tabsManager.updateTabTitle(tabId, 'Erro de carregamento');
-        this.tabsManager.updateTabLoadingState(tabId, false);
+      // Ignora os erros que não são relevantes 
+      // -3 é cancelamento, -6 é "file not found" que acontece durante redirecionamentos normais
+      if (errorCode !== -3 && errorCode !== -6) {
+        console.log(`Erro ao carregar ${validatedURL}: ${errorCode} - ${errorDescription}`);
         
-        try {
-          // Gera a página de erro HTML usando nosso serviço
-          const errorPageHtml = await ErrorPageService.generateErrorPageHtml(
-            validatedURL, 
-            errorCode
-          );
-          
-          // Carrega a página de erro no webview
-          webviewElement.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorPageHtml)}`);
-        } catch (err) {
-          console.error('Erro ao gerar página de erro:', err);
+        // Atualiza o estado da tab
+        this.tabsManager.updateTabLoadingState(tabId, false);
+        this.tabsManager.updateTabTitle(tabId, 'Erro de carregamento');
+        
+        // Registra o erro na tab
+        this.tabsManager.setTabError(tabId, {
+          code: errorCode ?? 0,
+          url: validatedURL || '',
+          description: errorDescription
+        });
+        
+        // Garantir que a URL original permanece na URL bar
+        if (this.tabsManager.getActiveTabId() === tabId) {
+          this.currentUrlRef.value = validatedURL || '';
         }
       }
+    });
+
+    // Mais eventos para manter o estado de navegação atualizado
+    ['did-navigate-in-page', 'dom-ready'].forEach(event => {
+      webviewElement.addEventListener(event, () => {
+        this.updateTabNavigationState(tabId, webviewElement);
+      });
     });
   }
 
@@ -201,17 +193,17 @@ export class WebViewManager {
   }
 
   /**
-   * Navega para uma URL específica ou pesquisa no Google (apenas na tab ativa)
+   * Navega para uma URL específica ou pesquisa no Google
    */
   public navigateToURL(text: string): void {
-    const webviewElement = this.getActiveWebview();
-    if (!webviewElement) return;
-    
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
+    
+    const webviewElement = this.webviews.get(activeTabId);
+    if (!webviewElement) return;
 
     try {
-      const input = text?.trim();
+      const input = text.trim();
       if (!input) return;
       
       let finalUrl: string;
@@ -225,30 +217,56 @@ export class WebViewManager {
         console.log('Realizando pesquisa no Google:', input);
       }
       
-      webviewElement.loadURL(finalUrl);
-      this.currentUrlRef.value = finalUrl;
+      // Limpa qualquer erro anterior
+      this.tabsManager.clearTabError(activeTabId);
+      
+      // Atualiza a URL imediatamente para evitar qualquer inconsistência
       this.tabsManager.updateTabUrl(activeTabId, finalUrl);
-      // Marca a tab como carregando
-      this.tabsManager.updateTabLoadingState(activeTabId, true);
+      this.currentUrlRef.value = finalUrl;
+      
+      // Tenta navegar para a URL
+      webviewElement.loadURL(finalUrl);
     } catch (err) {
-      console.error('Erro ao navegar para a URL ou realizar pesquisa:', err);
+      console.error('Erro ao navegar para a URL:', err);
     }
   }
 
   /**
-   * Recarrega a página atual (apenas na tab ativa)
+   * Tenta novamente carregar a página que falhou
    */
-  public reload(): void {
-    const webviewElement = this.getActiveWebview();
+  public retryLoadingPage(tabId: string): void {
+    const tab = this.tabsManager.getTabById(tabId);
+    if (!tab) return;
+    
+    const webviewElement = this.webviews.get(tabId);
     if (!webviewElement) return;
     
+    // Limpa o erro e tenta carregar a URL novamente
+    this.tabsManager.clearTabError(tabId);
+    webviewElement.loadURL(tab.url);
+  }
+
+  /**
+   * Recarrega a página atual
+   */
+  public reload(): void {
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
     
+    const tab = this.tabsManager.getTabById(activeTabId);
+    if (!tab) return;
+
+    const webviewElement = this.webviews.get(activeTabId);
+    if (!webviewElement) return;
+    
     try {
-      webviewElement.reload();
-      // Marca a tab como carregando
-      this.tabsManager.updateTabLoadingState(activeTabId, true);
+      // Se há um erro, tenta recarregar a URL original em vez de recarregar a página de erro
+      if (tab.error) {
+        this.retryLoadingPage(activeTabId);
+      } else {
+        // Recarrega a página normalmente
+        webviewElement.reload();
+      }
     } catch (err) {
       console.error('Erro ao recarregar página:', err);
     }
@@ -343,3 +361,4 @@ export class WebViewManager {
     }
   }
 }
+

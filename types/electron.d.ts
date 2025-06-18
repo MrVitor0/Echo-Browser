@@ -1,6 +1,10 @@
 // types/electron.d.ts
 export interface IElectronAPI {
-  getVersions: () => Promise<{ node: string; chrome: string; electron: string }>;
+  getVersions: () => Promise<{
+    node: string;
+    chrome: string;
+    electron: string;
+  }>;
   // Adicionando as funções de navegação
   reload: () => Promise<boolean>;
   goBack: () => Promise<boolean>;
@@ -10,5 +14,14 @@ export interface IElectronAPI {
 declare global {
   interface Window {
     electronAPI: IElectronAPI;
+  }
+  interface WebviewNavigationEvent extends Event {
+    title?: string;
+    favicons?: string[];
+    errorCode?: number;
+    errorDescription?: string;
+    code?: number;
+    url?: string;
+    validatedURL?: string;
   }
 }

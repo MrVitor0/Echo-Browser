@@ -45,7 +45,20 @@
         class="webview-wrapper"
         :class="{ 'hidden': !tab.isActive }"
       >
+        <!-- Mostra página de erro quando houver erro -->
+        <ErrorView
+          v-if="tab.error"
+          class="webview-content"
+          :url="tab.error.url || tab.url"
+          :error-code="tab.error.code"
+          :title="`Não foi possível acessar este site`"
+          @back="handleGoBack"
+          @retry="() => handleRetry(tab.id)"
+        />
+        
+        <!-- Mostra webview quando não há erro -->
         <webview
+          v-else
           :id="`webview-${tab.id}`"
           ref="webviewRefs"
           class="webview-content"
@@ -63,6 +76,7 @@ import { WebViewManager } from './components/WebViewManager';
 import type { WebViewElement } from './components/WebViewManager';
 import TabsContainer from './components/TabsContainer.vue';
 import FavoritesBar from './components/FavoritesBar.vue';
+import ErrorView from './components/ErrorView.vue';
 import { useTabs } from './composables/useTabs';
 import { useFavorites } from './composables/useFavorites';
 import type { Tab } from './composables/useTabs';
@@ -177,6 +191,11 @@ function handleGoBack(): void {
 
 function handleGoForward(): void {
   webViewManager.goForward();
+}
+
+// Handler para tentar carregar novamente uma página com erro
+function handleRetry(tabId: string): void {
+  webViewManager.retryLoadingPage(tabId);
 }
 
 onMounted(() => {
