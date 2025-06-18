@@ -342,4 +342,56 @@ function formatFullDate(timestamp: number): string {
   background-color: rgba(0, 0, 0, 0.08);
   color: #202124;
 }
+
+/* Estilos para tema escuro */
+:global(.dark-mode) .history-container {
+  background-color: #202124;
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .history-header h2 {
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .history-search {
+  background-color: #3c4043;
+  border-color: #5f6368;
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .clear-history-btn {
+  background-color: #3c4043;
+  color: #8ab4f8;
+}
+
+:global(.dark-mode) .clear-history-btn:hover {
+  background-color: #4a4c50;
+}
+
+:global(.dark-mode) .history-date {
+  color: #8ab4f8;
+  border-bottom-color: #3c4043;
+}
+
+:global(.dark-mode) .history-item:hover {
+  background-color: #3c4043;
+}
+
+:global(.dark-mode) .history-item-title {
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .history-item-url,
+:global(.dark-mode) .history-item-time {
+  color: #9aa0a6;
+}
+
+:global(.dark-mode) .remove-item-btn {
+  color: #8ab4f8;
+}
+
+:global(.dark-mode) .remove-item-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #aecbfa;
+}
 </style>

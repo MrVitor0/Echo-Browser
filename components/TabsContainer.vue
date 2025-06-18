@@ -1,10 +1,11 @@
 <template>
-  <div class="tabs-container">
-    <div class="tabs-list">
+  <div class="tabs-container" :class="{ 'dark-mode-container': isDarkMode }">
+    <div class="tabs-list ">
       <BrowserTab
         v-for="tab in tabs"
         :key="tab.id"
         :tab="tab"
+        :is-dark-mode="isDarkMode"
         @activate="() => handleActivateTab(tab.id)"
         @close="() => handleCloseTab(tab.id)"
       />
@@ -34,6 +35,11 @@ import { computed } from 'vue';
 import BrowserTab from './BrowserTab.vue';
 import { useTabs } from '../composables/useTabs';
 import type { Tab } from '../composables/useTabs';
+
+
+defineProps<{
+  isDarkMode: boolean;
+}>();
 
 // Usa o composable para gerenciar as tabs
 const tabsManager = useTabs();
@@ -113,5 +119,30 @@ function handleNewPrivateTab(): void {
 .new-private-tab-button {
   font-size: 14px;
   color: #464066;
+}
+
+.dark-mode-container {
+  background-color: #202124;
+  border-bottom: 1px solid #3c4043;
+}
+
+/* Estilos para tema escuro */
+:global(.dark-mode) .tabs-container {
+  background-color: #202124;
+  border-bottom-color: #3c4043;
+}
+
+:global(.dark-mode) .new-tab-button, 
+:global(.dark-mode) .new-private-tab-button {
+  color: #8ab4f8;
+}
+
+:global(.dark-mode) .new-tab-button:hover, 
+:global(.dark-mode) .new-private-tab-button:hover {
+  background-color: #3c4043;
+}
+
+:global(.dark-mode) .new-private-tab-button {
+  color: #aecbfa;
 }
 </style>

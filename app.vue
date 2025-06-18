@@ -4,7 +4,7 @@
     'dark-mode': isDarkMode 
   }">
     <!-- Container de tabs -->
-    <TabsContainer />
+    <TabsContainer :is-dark-mode="isDarkMode" />
 
     <div class="toolbar">
       <!-- Indicador de navegação privada -->
@@ -16,7 +16,7 @@
       <button :disabled="!activeTab?.canGoBack" @click="handleGoBack">←</button>
       <button :disabled="!activeTab?.canGoForward" @click="handleGoForward">→</button>
       <button @click="handleReload">⟳</button>
-      <div class="url-bar-container">
+      <div class="url-bar-container ">
         <input
           ref="urlBarRef"
           class="url-bar"
@@ -75,6 +75,7 @@
 
     <!-- Barra de favoritos -->
     <FavoritesBar
+      :is-dark-mode="isDarkMode"
       :show-favorites="showFavoritesBar"
       @navigate="handleNavigateToURL"
     />

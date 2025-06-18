@@ -126,4 +126,44 @@ p {
 .action-button.primary:hover {
   background-color: #1766ca;
 }
+
+/* Estilos para tema escuro */
+:global(.dark-mode) .error-page {
+  background-color: #202124;
+}
+
+:global(.dark-mode) .error-container {
+  background-color: #292a2d;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+:global(.dark-mode) h1 {
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) p {
+  color: #9aa0a6;
+}
+
+:global(.dark-mode) .error-suggestions li {
+  color: #9aa0a6;
+}
+
+:global(.dark-mode) .action-button {
+  background-color: #3c4043;
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .action-button:hover {
+  background-color: #4a4c50;
+}
+
+:global(.dark-mode) .action-button.primary {
+  background-color: #8ab4f8;
+  color: #202124;
+}
+
+:global(.dark-mode) .action-button.primary:hover {
+  background-color: #aecbfa;
+}
 </style>

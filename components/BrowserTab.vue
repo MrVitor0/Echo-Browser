@@ -1,7 +1,11 @@
 <template>
   <div 
-    class="browser-tab" 
-    :class="{ 'active': tab.isActive, 'private': tab.isPrivate }"
+    class="browser-tab"
+    :class="{ 
+      'active': tab.isActive, 
+      'private': tab.isPrivate, 
+      'dark-mode-tab': isDarkMode 
+    }"
     @click="handleTabClick"
   >
     <!-- Indicador de navegação privada -->
@@ -9,7 +13,7 @@
       <span>🔒</span>
     </div>
     
-    <div class="favicon-container">
+    <div class="favicon-container ">
       <img v-if="tab.favicon" :src="tab.favicon" alt="Favicon" class="favicon-img" />
       <span v-else class="default-icon">{{ tab.isPrivate ? '🕵️' : '🌐' }}</span>
     </div>
@@ -38,6 +42,7 @@ import type { Tab } from '../composables/useTabs';
 // Define props tipadas
 defineProps<{
   tab: Tab;
+  isDarkMode: boolean;
 }>();
 
 // Define eventos com tipos
@@ -160,6 +165,54 @@ function handleCloseClick(): void {
 .tab-close:hover {
   background-color: rgba(0, 0, 0, 0.1);
   opacity: 1;
+}
+
+.dark-mode-tab {
+  background-color: #292a2d;
+  color: #e4e4e4;
+}
+.browser-tab.active.dark-mode-tab {
+  background-color: #3c4043;
+}   
+.browser-tab.private.dark-mode-tab {
+  background-color: #37324A;
+  color: #e0e0e0;
+}
+
+/* Estilos para tema escuro */
+:global(.dark-mode) .browser-tab {
+  background-color: #292a2d;
+  color: #e4e4e4;
+}
+
+:global(.dark-mode) .browser-tab:hover {
+  background-color: #3c4043;
+}
+
+:global(.dark-mode) .browser-tab.active {
+  background-color: #3c4043;
+}
+
+:global(.dark-mode) .tab-close {
+  color: #8ab4f8;
+}
+
+:global(.dark-mode) .tab-close:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Manter os estilos da aba privada mesmo com tema escuro */
+:global(.dark-mode) .browser-tab.private {
+  background-color: #37324A;
+  color: #e0e0e0;
+}
+
+:global(.dark-mode) .browser-tab.private:hover {
+  background-color: #433D5B;
+}
+
+:global(.dark-mode) .browser-tab.private.active {
+  background-color: #544D6B;
 }
 
 @keyframes spin {

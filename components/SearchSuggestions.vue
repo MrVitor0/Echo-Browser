@@ -160,27 +160,27 @@ function highlightMatch(suggestion: string, query: string): string {
   color: #BEAAE1;
 }
 
-/* Adicione estilos para tema escuro */
-:global(.dark-mode) .suggestions-dropdown {
+/* Atualizar os estilos para tema escuro */
+:global(.dark-mode) .suggestions-dropdown:not(.private) {
   background-color: #292a2d;
   border-color: #3c4043;
 }
 
-:global(.dark-mode) .suggestion-item {
+:global(.dark-mode) .suggestions-dropdown:not(.private) .suggestion-item {
   color: #e4e4e4;
 }
 
-:global(.dark-mode) .suggestion-item:hover,
-:global(.dark-mode) .suggestion-item.selected {
+:global(.dark-mode) .suggestions-dropdown:not(.private) .suggestion-item:hover,
+:global(.dark-mode) .suggestions-dropdown:not(.private) .suggestion-item.selected {
   background-color: #3c4043;
 }
 
-:global(.dark-mode) .loading-spinner {
+:global(.dark-mode) .suggestions-dropdown:not(.private) .loading-spinner {
   border-color: #3c4043;
   border-top-color: #8ab4f8;
 }
 
-:global(.dark-mode) :deep(.highlight) {
+:global(.dark-mode) .suggestions-dropdown:not(.private) :deep(.highlight) {
   color: #8ab4f8;
 }
 </style>

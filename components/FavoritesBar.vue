@@ -1,9 +1,10 @@
 <template>
   <div v-if="showFavorites" class="favorites-bar" >
-    <div class="favorites-container">
+    <div  :class="{ 'dark-mode': isDarkMode }" class="favorites-container">
       <div 
         v-for="favorite in favorites" 
         :key="favorite.id" 
+        :class="{ 'dark-item': isDarkMode }"
         class="favorite-item"
         @click="handleFavoriteClick(favorite)"
       >
@@ -11,12 +12,12 @@
           <img v-if="favorite.favicon" :src="favorite.favicon" alt="">
           <span v-else>🌐</span>
         </div>
-        <div class="favorite-title" :title="favorite.title">
+        <div class="favorite-title "  :title="favorite.title">
           {{ favorite.title }}
         </div>
         <button 
           title="Remover dos favoritos"
-          class="favorite-remove" 
+          class="favorite-remove " 
           @click.stop="handleRemoveFavorite(favorite.id)"
         >
           ×
@@ -33,6 +34,7 @@ import type { Favorite } from '../composables/useFavorites';
 // Definir corretamente as props com TypeScript
 defineProps<{
   showFavorites: boolean;
+  isDarkMode: boolean;
 }>();
 
 // Definir os emits com tipos corretos
@@ -55,6 +57,7 @@ function handleRemoveFavorite(id: string): void {
 </script>
 
 <style scoped>
+
 .favorites-bar {
   width: 100%;
   background-color: #f5f5f5;
@@ -130,6 +133,20 @@ function handleRemoveFavorite(id: string): void {
 
 .favorite-remove:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark-item {
+  background-color: #3c4043;
+  color: #e4e4e4;
+}
+
+.dark-item:hover {
+  background-color: #4a4c50;
+}
+
+.dark-mode .favorites-bar {
+  background-color: #292a2d;
+  border-bottom-color: #3c4043;
 }
 
 /* Estilos para tema escuro */
