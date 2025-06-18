@@ -1,11 +1,17 @@
-// electron/preload.ts
+// electron/preload.cts
 import { contextBridge, ipcRenderer } from 'electron';
+import { IElectronAPI } from '../types/electron';
 
-// Expõe funcionalidades seguras para o processo de renderização (Nuxt)
-// sob o objeto global window.electronAPI
-contextBridge.exposeInMainWorld('electronAPI', {
-  // Cria uma função 'getVersions' que o Nuxt poderá chamar.
-  // Ela envia um evento 'get-app-versions' para o processo Main e retorna a resposta.
-  getVersions: (): Promise<{ node: string; chrome: string; electron: string }> =>
+// Implementação tipada da API do Electron
+const electronAPI: IElectronAPI = {
+  getVersions: (): Promise<{ node: string; chrome: string; electron: string }> => 
     ipcRenderer.invoke('get-app-versions'),
-});
+  
+  // Funções de navegação tipadas
+  reload: (): Promise<boolean> => ipcRenderer.invoke('navigate', 'reload'),
+  goBack: (): Promise<boolean> => ipcRenderer.invoke('navigate', 'back'),
+  goForward: (): Promise<boolean> => ipcRenderer.invoke('navigate', 'forward')
+};
+
+// Expõe funcionalidades seguras para o Nuxt
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);

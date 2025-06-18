@@ -10,11 +10,12 @@ function createWindow() {
   if (win !== null) {
     return; // Já existe uma janela aberta
   }
-  win = new BrowserWindow({
+ win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
+      webviewTag: true, // Habilita o uso da tag <webview>
     },
   });
   if (isDev) {
@@ -27,11 +28,8 @@ function createWindow() {
     win = null;
   });
 }
-// ...existing code...
 
 app.whenReady().then(() => {
-  // Adicione este handler ANTES de criar a janela
-  // Ele vai ouvir o evento 'get-app-versions' do preload.ts
   ipcMain.handle('get-app-versions', () => {
     return {
       node: process.versions.node,
@@ -39,19 +37,42 @@ app.whenReady().then(() => {
       electron: process.versions.electron,
     };
   });
-
+  
+  // Handler para as funções de navegação
+  ipcMain.handle('navigate', (_, action) => {
+    if (!win) return false;
+    
+    switch (action) {
+      case 'reload':
+        win.webContents.reload();
+        return true;
+      case 'back':
+        if (win.webContents.navigationHistory.canGoBack()) {
+          win.webContents.navigationHistory.goBack();
+          return true;
+        }
+        return false;
+      case 'forward':
+        if (win.webContents.navigationHistory.canGoForward()) {
+          win.webContents.navigationHistory.goForward();
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+  });
+  
   createWindow();
+});
+
+ipcMain.handle('get-electron-version', () => {
+  return `Electron: ${process.versions.electron}`;
 });
 
 // Este método será chamado quando o Electron terminar a inicialização
 // e estiver pronto para criar janelas do navegador.
 app.whenReady().then(createWindow);
-
-
-// Adicione este código antes da linha app.whenReady().then(createWindow);
-ipcMain.handle('get-electron-version', () => {
-  return `Electron: ${process.versions.electron}`;
-});
 
 // Encerre o aplicativo quando todas as janelas forem fechadas (exceto no macOS).
 app.on('window-all-closed', () => {
