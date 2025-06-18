@@ -4,15 +4,15 @@
       <h2>Histórico</h2>
       <div class="history-search-container">
         <input 
-          v-model="searchQuery"
           type="text" 
+          v-model="searchQuery"
           placeholder="Pesquisar no histórico"
           class="history-search"
         >
         <button 
+          @click="clearHistory" 
           class="clear-history-btn" 
           title="Limpar todo o histórico"
-          @click="clearHistory" 
         >
           Limpar histórico
         </button>
@@ -37,17 +37,17 @@
           >
             <div class="history-item-title">{{ item.title }}</div>
             <div class="history-item-url">{{ item.url }}</div>
-             <div class="history-item-time">
-                {{ formatTime(item.lastVisitedAt) }}
+            <div class="history-item-time">
+              {{ formatTime(item.lastVisitedAt) }}
+              <span v-if="item.visitCount > 1" class="visit-count">
+                · Visitado {{ item.visitCount }} vezes
+              </span>
             </div>
           </div>
-          <div class="history-item-time">
-                Visitado em: {{ formatFullDate(item.lastVisitedAt) }}
-            </div>
           <button 
+            @click="removeItem(item.id)" 
             class="remove-item-btn"
             title="Remover do histórico"
-            @click="removeItem(item.id)" 
           >
             ×
           </button>
@@ -59,13 +59,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useHistory } from '../composables/useHistory';
-import type { HistoryItem } from '../composables/useHistory';
-
-//component name
-defineOptions({
-  name: 'HistoryPage'
-});
+import { useHistory, type HistoryItem } from '../composables/useHistory';
 
 // Props e emits
 const emit = defineEmits<{
@@ -158,18 +152,6 @@ function isSameDay(date1: Date, date2: Date): boolean {
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-function formatFullDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   });

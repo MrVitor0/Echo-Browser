@@ -1,7 +1,9 @@
 import type { Ref } from 'vue';
 import { useTabs } from '../composables/useTabs';
 import { useFavorites } from '../composables/useFavorites';
+import { useBlockedDomains } from '../composables/useBlockedDomains';
 import { useHistory } from '../composables/useHistory';
+import type { WebViewElement } from '../types/electron';
 
 // Interface para o elemento WebView do Electron
 export interface WebViewElement extends HTMLElement {
@@ -31,10 +33,13 @@ export class WebViewManager {
   private readonly defaultSearchEngine: string = 'https://www.google.com/search?q=';
   private readonly tabsManager = useTabs();
   private readonly favoritesManager = useFavorites();
+  private readonly blockedDomainsManager = useBlockedDomains();
   private readonly historyManager = useHistory();
-
-  constructor(currentUrlRef: Ref<string>) {
+  private isDarkMode: Ref<boolean>; // Referência para tema escuro
+  
+  constructor(currentUrlRef: Ref<string>, isDarkMode: Ref<boolean>) {
     this.currentUrlRef = currentUrlRef;
+    this.isDarkMode = isDarkMode;
   }
 
   /**
@@ -203,6 +208,103 @@ export class WebViewManager {
         this.updateTabNavigationState(tabId, webviewElement);
       });
     });
+    
+    // Configurar bloqueio de domínios
+    this.setupDomainBlocker(webviewElement);
+  }
+  
+  /**
+   * Configura o bloqueador de domínios para o webview
+   */
+  private setupDomainBlocker(webviewElement: WebViewElement): void {
+    // Intercepta solicitações de carregamento de recursos
+    webviewElement.addEventListener('will-navigate', (e: any) => {
+      const url = e.url;
+      
+      if (this.blockedDomainsManager.isDomainBlocked(url)) {
+        // Cancela a navegação para domínios bloqueados
+        e.preventDefault();
+        console.log(`[Bloqueador] Navegação bloqueada para: ${url}`);
+      }
+    });
+    
+    // Bloqueia também recursos carregados em frames
+    webviewElement.addEventListener('did-start-loading', () => {
+      // Injeta código para bloquear requisições
+      const blockedDomains = this.blockedDomainsManager.blockedDomains.value
+        .filter(domain => domain.enabled)
+        .map(domain => domain.domain);
+        
+      const script = `
+        // Lista de domínios bloqueados
+        const blockedDomains = ${JSON.stringify(blockedDomains)};
+        
+        // Intercepta requisições de rede
+        const originalFetch = window.fetch;
+        window.fetch = function(resource, init) {
+          const url = resource.toString();
+          try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname;
+            
+            // Verifica se o domínio deve ser bloqueado
+            const isBlocked = blockedDomains.some(domain => 
+              hostname === domain || hostname.endsWith('.' + domain)
+            );
+            
+            if (isBlocked) {
+              console.log('[Bloqueador] Bloqueada requisição para:', url);
+              return Promise.reject(new Error('Requisição bloqueada pelo Echo Browser'));
+            }
+          } catch (e) {}
+          
+          // Continua com o fetch original se não for bloqueado
+          return originalFetch.apply(this, arguments);
+        };
+        
+        // Bloqueio para imagens, scripts, etc.
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length) {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeName === 'IFRAME' || node.nodeName === 'SCRIPT' || 
+                    node.nodeName === 'IMG' || node.nodeName === 'LINK') {
+                  const src = node.src || node.href;
+                  if (src) {
+                    try {
+                      const urlObj = new URL(src);
+                      const hostname = urlObj.hostname;
+                      
+                      // Verifica se o domínio deve ser bloqueado
+                      const isBlocked = blockedDomains.some(domain => 
+                        hostname === domain || hostname.endsWith('.' + domain)
+                      );
+                      
+                      if (isBlocked) {
+                        console.log('[Bloqueador] Elemento bloqueado:', src);
+                        node.remove();
+                      }
+                    } catch (e) {}
+                  }
+                }
+              });
+            }
+          });
+        });
+        
+        // Configura o observer para monitorar alterações no DOM
+        observer.observe(document, {
+          childList: true,
+          subtree: true
+        });
+        
+        console.log('[Bloqueador] Inicializado com', blockedDomains.length, 'domínios bloqueados');
+      `;
+      
+      // Executa o script no contexto da página
+      webviewElement.executeJavaScript(script)
+        .catch(err => console.error("Erro ao injetar bloqueador:", err));
+    });
   }
 
   /**
@@ -264,10 +366,17 @@ export class WebViewManager {
       if (this.isValidUrl(input)) {
         // É uma URL válida, formata corretamente
         finalUrl = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+        
+        // Verifica se o domínio está bloqueado
+        if (this.blockedDomainsManager.isDomainBlocked(finalUrl)) {
+          console.log(`[Bloqueador] Navegação bloqueada para: ${finalUrl}`);
+          return; // Bloqueia a navegação
+        }
       } else {
         // Não é URL, pesquisa no Google
-        finalUrl = `${this.defaultSearchEngine}${encodeURIComponent(input)}`;
-        console.log('Realizando pesquisa no Google:', input);
+        // Adicionar parâmetro de tema baseado na preferência atual
+        const themeParam = this.isDarkMode.value ? '&cs=1' : '';
+        finalUrl = `${this.defaultSearchEngine}${encodeURIComponent(input)}${themeParam}`;
       }
       
       // Limpa qualquer erro anterior
@@ -280,7 +389,7 @@ export class WebViewManager {
       // Tenta navegar para a URL
       webviewElement.loadURL(finalUrl);
     } catch (err) {
-      console.error('Erro ao navegar para a URL:', err);
+      console.error('Erro ao navegar para a URL ou realizar pesquisa:', err);
     }
   }
 
@@ -412,5 +521,12 @@ export class WebViewManager {
       this.favoritesManager.addFavorite(tab.title, tab.url, tab.favicon);
       return true;
     }
+  }
+
+  /**
+   * Atualiza o modo escuro do gerenciador
+   */
+  public setDarkMode(isDark: boolean): void {
+    this.isDarkMode.value = isDark;
   }
 }

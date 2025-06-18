@@ -64,6 +64,13 @@
         {{ isDarkMode ? '☀️' : '🌙' }}
       </button>
       <button
+        class="ad-blocker-button"
+        title="Gerenciar bloqueador de anúncios"
+        @click="showBlockerModal = true"
+      >
+        🛡️
+      </button>
+      <button
         class="toggle-favorites-button"
         title="Mostrar/esconder favoritos"
         :class="{ 'active': showFavoritesBar }"
@@ -124,20 +131,40 @@
         <History @navigate="handleNavigateToURL" @close="showHistory = false" />
       </div>
     </div>
+
+    <!-- Modal do bloqueador de domínios -->
+    <div
+      v-if="showBlockerModal"
+      class="modal-overlay"
+      @click.self="showBlockerModal = false"
+    >
+      <div class="modal-content">
+        <div class="modal-header">
+          <button class="modal-close" @click="showBlockerModal = false">×</button>
+        </div>
+        <DomainBlockerModal 
+          :is-dark-mode="isDarkMode"
+          @close="showBlockerModal = false" 
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { WebViewManager } from "./components/WebViewManager";
 import TabsContainer from "./components/TabsContainer.vue";
 import FavoritesBar from "./components/FavoritesBar.vue";
 import ErrorView from "./components/ErrorView.vue";
 import History from "./components/History.vue";
 import SearchSuggestions from "./components/SearchSuggestions.vue";
+import DomainBlockerModal from "./components/DomainBlockerModal.vue";
 import { useTabs } from "./composables/useTabs";
 import { useFavorites } from "./composables/useFavorites";
 import { useSuggestions } from "./composables/useSuggestions";
+import { useBlockedDomains } from "./composables/useBlockedDomains";
+import { useHistory } from "./composables/useHistory";
 import type { Tab } from "./composables/useTabs";
 // Estados reativos
 const urlBarText = ref<string>("https://www.google.com");
@@ -146,13 +173,17 @@ const showFavoritesBar = ref<boolean>(false);
 const isCurrentFavorite = ref<boolean>(false);
 const showHistory = ref<boolean>(false);
 const isDarkMode = ref<boolean>(false);
+const showBlockerModal = ref<boolean>(false);
 
 // Obtém o gerenciador de tabs e favoritos
 const tabsManager = useTabs();
 const favoritesManager = useFavorites();
 
-// Criação do gerenciador de WebView
-const webViewManager = new WebViewManager(urlBarText);
+// Obtém o gerenciador de domínios bloqueados
+const blockedDomainsManager = useBlockedDomains();
+
+// Criação do gerenciador de WebView com tema
+const webViewManager = new WebViewManager(urlBarText, isDarkMode);
 
 // Computed properties
 const tabs = computed<Tab[]>(() => tabsManager.getTabs());
@@ -340,6 +371,27 @@ function toggleFavorite(): void {
   }
 }
 
+// Detectar preferência de tema do sistema
+function detectSystemTheme(): boolean {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+// Observer para mudanças de tema no sistema
+function setupThemeObserver(): void {
+  const callback = (event: MediaQueryListEvent) => {
+    isDarkMode.value = event.matches;
+    webViewManager.setDarkMode(isDarkMode.value);
+  };
+
+  const mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+  mediaQueryList.addEventListener('change', callback);
+
+  // Limpeza do listener ao destruir o componente
+  onUnmounted(() => {
+    mediaQueryList.removeEventListener('change', callback);
+  });
+}
+
 onMounted(() => {
   console.log("Componente montado");
 
@@ -356,6 +408,12 @@ onMounted(() => {
   if (isDarkMode.value) {
     document.documentElement.classList.add('dark-mode');
   }
+
+  // Configurar observer para mudanças no tema do sistema
+  setupThemeObserver();
+  
+  // Inicializar o gerenciador de WebView com o tema atual
+  webViewManager.setDarkMode(isDarkMode.value);
 });
 
 watch(showFavoritesBar, (newValue: boolean) => {
@@ -603,6 +661,44 @@ html {
 .theme-toggle-button:hover {
   color: #555;
   transform: scale(1.1);
+}
+
+/* Botão do bloqueador de anúncios */
+.ad-blocker-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  transition: color 0.2s, transform 0.1s;
+}
+
+.ad-blocker-button:hover {
+  color: #555;
+  transform: scale(1.1);
+}
+
+/* Estilo para tema escuro */
+.dark-mode .ad-blocker-button {
+  color: #8ab4f8;
+}
+
+.dark-mode .ad-blocker-button:hover {
+  color: #aecbfa;
+}
+
+/* Estilo para modo privado */
+.private-mode .ad-blocker-button {
+  color: #9C89B8;
+}
+
+.private-mode .ad-blocker-button:hover {
+  color: #BEAAE1;
 }
 
 /* Estilos do tema escuro */
