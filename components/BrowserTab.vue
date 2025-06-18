@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
-import type { Tab } from '../store/tabsStore';
+import type { Tab } from '../composables/useTabs';
 
 const props = defineProps<{
   tab: Tab

@@ -19,21 +19,25 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import BrowserTab from './BrowserTab.vue';
-import { tabsGetters, tabsActions } from '../store/tabsStore';
+import { useTabs } from '../composables/useTabs';
 
-const tabs = computed(() => tabsGetters.getTabs());
+// Usa o composable para gerenciar as tabs
+const tabsManager = useTabs();
+
+// Computed property para as tabs
+const tabs = computed(() => tabsManager.getTabs());
 
 function handleActivateTab(tabId: string) {
-  tabsActions.activateTab(tabId);
+  tabsManager.activateTab(tabId);
 }
 
 function handleCloseTab(tabId: string) {
-  tabsActions.closeTab(tabId);
+  tabsManager.closeTab(tabId);
 }
 
 function handleNewTab() {
-  const newTabId = tabsActions.addTab();
-  tabsActions.activateTab(newTabId);
+  const newTabId = tabsManager.addTab();
+  tabsManager.activateTab(newTabId);
 }
 </script>
 

@@ -40,18 +40,21 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { WebViewManager } from './components/WebViewManager';
 import type { WebViewElement } from './components/WebViewManager';
 import TabsContainer from './components/TabsContainer.vue';
-import { tabsActions, tabsGetters } from './store/tabsStore';
+import { useTabs } from './composables/useTabs';
 
 // Estados reativos
 const urlBarText = ref('https://www.google.com');
 const webviewRefs = ref<Array<HTMLElement>>([]);
 
+// Obtém o gerenciador de tabs
+const tabsManager = useTabs();
+
 // Criação do gerenciador de WebView
 const webViewManager = new WebViewManager(urlBarText);
 
 // Computed properties
-const tabs = computed(() => tabsGetters.getTabs());
-const activeTab = computed(() => tabsGetters.getActiveTab());
+const tabs = computed(() => tabsManager.getTabs());
+const activeTab = computed(() => tabsManager.getActiveTab());
 
 // Atualiza a URL na barra de endereço quando a tab ativa muda
 watch(activeTab, (newActiveTab) => {
@@ -115,7 +118,7 @@ onMounted(() => {
   console.log('Componente montado');
   
   // Garantir que há pelo menos uma tab ativa
-  tabsActions.ensureActiveTab();
+  tabsManager.ensureActiveTab();
 });
 </script>
 

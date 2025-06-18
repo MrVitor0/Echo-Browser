@@ -1,5 +1,5 @@
 import type { Ref } from 'vue';
-import { tabsGetters, tabsActions } from '../store/tabsStore';
+import { useTabs } from '../composables/useTabs';
 
 // Interface para o elemento WebView do Electron
 export interface WebViewElement extends HTMLElement {
@@ -27,6 +27,7 @@ export class WebViewManager {
   private webviews: Map<string, WebViewElement> = new Map();
   private readonly currentUrlRef: Ref<string>;
   private readonly defaultSearchEngine: string = 'https://www.google.com/search?q=';
+  private readonly tabsManager = useTabs();
 
   constructor(currentUrlRef: Ref<string>) {
     this.currentUrlRef = currentUrlRef;
@@ -68,33 +69,33 @@ export class WebViewManager {
 
     // Começou a carregar
     webviewElement.addEventListener('did-start-loading', () => {
-      tabsActions.updateTabLoadingState(tabId, true);
+      this.tabsManager.updateTabLoadingState(tabId, true);
     });
 
     // Terminou de carregar
     webviewElement.addEventListener('did-stop-loading', () => {
-      tabsActions.updateTabLoadingState(tabId, false);
+      this.tabsManager.updateTabLoadingState(tabId, false);
     });
 
     // Título da página foi atualizado
     webviewElement.addEventListener('page-title-updated', (e: any) => {
-      tabsActions.updateTabTitle(tabId, e.title);
+      this.tabsManager.updateTabTitle(tabId, e.title);
     });
 
     // Favicon foi atualizado
     webviewElement.addEventListener('page-favicon-updated', (e: any) => {
       if (e.favicons && e.favicons.length > 0) {
-        tabsActions.updateTabFavicon(tabId, e.favicons[0]);
+        this.tabsManager.updateTabFavicon(tabId, e.favicons[0]);
       }
     });
 
     // URL foi atualizada
     webviewElement.addEventListener('did-navigate', () => {
       const url = webviewElement.getURL();
-      tabsActions.updateTabUrl(tabId, url);
+      this.tabsManager.updateTabUrl(tabId, url);
       
       // Atualiza a URL na barra de endereço se esta tab estiver ativa
-      const activeTab = tabsGetters.getActiveTab();
+      const activeTab = this.tabsManager.getActiveTab();
       if (activeTab && activeTab.id === tabId) {
         this.currentUrlRef.value = url;
       }
@@ -109,7 +110,7 @@ export class WebViewManager {
       const canGoBack = webviewElement.canGoBack();
       const canGoForward = webviewElement.canGoForward();
       
-      tabsActions.updateTabNavigationState(tabId, canGoBack, canGoForward);
+      this.tabsManager.updateTabNavigationState(tabId, canGoBack, canGoForward);
     } catch (err) {
       console.error('Erro ao atualizar estado de navegação da tab:', err);
     }
@@ -145,7 +146,7 @@ export class WebViewManager {
    * Navega para uma URL específica ou pesquisa no Google
    */
   public navigateToURL(text: string): void {
-    const activeTabId = tabsGetters.getActiveTabId();
+    const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
     
     const webviewElement = this.webviews.get(activeTabId);
@@ -168,7 +169,7 @@ export class WebViewManager {
       
       webviewElement.loadURL(finalUrl);
       this.currentUrlRef.value = finalUrl;
-      tabsActions.updateTabUrl(activeTabId, finalUrl);
+      this.tabsManager.updateTabUrl(activeTabId, finalUrl);
     } catch (err) {
       console.error('Erro ao navegar para a URL ou realizar pesquisa:', err);
     }
@@ -178,7 +179,7 @@ export class WebViewManager {
    * Recarrega a página atual
    */
   public reload(): void {
-    const activeTabId = tabsGetters.getActiveTabId();
+    const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
     
     const webviewElement = this.webviews.get(activeTabId);
@@ -195,7 +196,7 @@ export class WebViewManager {
    * Volta para a página anterior
    */
   public goBack(): void {
-    const activeTabId = tabsGetters.getActiveTabId();
+    const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
     
     const webviewElement = this.webviews.get(activeTabId);
@@ -214,7 +215,7 @@ export class WebViewManager {
    * Avança para a próxima página
    */
   public goForward(): void {
-    const activeTabId = tabsGetters.getActiveTabId();
+    const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
     
     const webviewElement = this.webviews.get(activeTabId);
