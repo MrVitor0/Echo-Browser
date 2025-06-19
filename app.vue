@@ -33,7 +33,7 @@
           @keydown.up.prevent="handleSuggestionNavUp"
           @blur="handleUrlBarBlur"
           @focus="handleUrlBarFocus"
-        />
+        >
         <!-- Componente de sugestões -->
         <SearchSuggestions
           :suggestions="suggestions"
