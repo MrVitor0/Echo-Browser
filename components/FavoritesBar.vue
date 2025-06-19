@@ -1,23 +1,23 @@
 <template>
-  <div v-if="showFavorites" class="favorites-bar" >
-    <div  :class="{ 'dark-mode': isDarkMode }" class="favorites-container">
-      <div 
-        v-for="favorite in favorites" 
-        :key="favorite.id" 
+  <div v-if="showFavorites" class="favorites-bar">
+    <div :class="{ 'dark-mode': isDarkMode }" class="favorites-container">
+      <div
+        v-for="favorite in favorites"
+        :key="favorite.id"
         :class="{ 'dark-item': isDarkMode }"
         class="favorite-item"
         @click="handleFavoriteClick(favorite)"
       >
         <div class="favorite-icon">
-          <img v-if="favorite.favicon" :src="favorite.favicon" alt="">
+          <img v-if="favorite.favicon" :src="favorite.favicon" alt="" >
           <span v-else>🌐</span>
         </div>
-        <div class="favorite-title "  :title="favorite.title">
+        <div class="favorite-title" :title="favorite.title">
           {{ favorite.title }}
         </div>
-        <button 
+        <button
           title="Remover dos favoritos"
-          class="favorite-remove " 
+          class="favorite-remove"
           @click.stop="handleRemoveFavorite(favorite.id)"
         >
           ×
@@ -28,8 +28,8 @@
 </template>
 
 <script setup lang="ts">
-import { useFavorites } from '../composables/useFavorites';
-import type { Favorite } from '../composables/useFavorites';
+import { useFavorites } from "../composables/useFavorites";
+import type { Favorite } from "../composables/useFavorites";
 
 // Definir corretamente as props com TypeScript
 defineProps<{
@@ -47,7 +47,7 @@ const { favorites, removeFavorite } = useFavorites();
 
 // Handler para clique em um favorito
 function handleFavoriteClick(favorite: Favorite): void {
-  emit('navigate', favorite.url);
+  emit("navigate", favorite.url);
 }
 
 // Handler para remover um favorito
@@ -57,7 +57,6 @@ function handleRemoveFavorite(id: string): void {
 </script>
 
 <style scoped>
-
 .favorites-bar {
   width: 100%;
   background-color: #f5f5f5;
@@ -124,7 +123,9 @@ function handleRemoveFavorite(id: string): void {
   margin-left: 4px;
   border-radius: 50%;
   opacity: 0;
-  transition: opacity 0.2s, background-color 0.2s;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s;
 }
 
 .favorite-item:hover .favorite-remove {

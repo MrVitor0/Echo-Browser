@@ -1,6 +1,6 @@
 <template>
   <div class="tabs-container" :class="{ 'dark-mode-container': isDarkMode }">
-    <div class="tabs-list ">
+    <div class="tabs-list">
       <BrowserTab
         v-for="tab in tabs"
         :key="tab.id"
@@ -9,19 +9,15 @@
         @activate="() => handleActivateTab(tab.id)"
         @close="() => handleCloseTab(tab.id)"
       />
-      
+
       <div class="tabs-actions">
-        <button 
-          class="new-tab-button" 
-          @click="handleNewTab" 
-          title="Nova aba"
-        >
+        <button title="Nova aba" class="new-tab-button" @click="handleNewTab">
           +
         </button>
-        <button 
-          class="new-private-tab-button" 
-          @click="handleNewPrivateTab" 
+        <button
           title="Nova aba privada"
+          class="new-private-tab-button"
+          @click="handleNewPrivateTab"
         >
           🔒
         </button>
@@ -31,11 +27,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import BrowserTab from './BrowserTab.vue';
-import { useTabs } from '../composables/useTabs';
-import type { Tab } from '../composables/useTabs';
-
+import { computed } from "vue";
+import BrowserTab from "./BrowserTab.vue";
+import { useTabs } from "../composables/useTabs";
+import type { Tab } from "../composables/useTabs";
 
 defineProps<{
   isDarkMode: boolean;
@@ -96,7 +91,8 @@ function handleNewPrivateTab(): void {
   align-items: center;
 }
 
-.new-tab-button, .new-private-tab-button {
+.new-tab-button,
+.new-private-tab-button {
   width: 28px;
   height: 28px;
   display: flex;
@@ -112,7 +108,8 @@ function handleNewPrivateTab(): void {
   transition: background-color 0.2s;
 }
 
-.new-tab-button:hover, .new-private-tab-button:hover {
+.new-tab-button:hover,
+.new-private-tab-button:hover {
   background-color: #ccc;
 }
 
@@ -132,12 +129,12 @@ function handleNewPrivateTab(): void {
   border-bottom-color: #3c4043;
 }
 
-:global(.dark-mode) .new-tab-button, 
+:global(.dark-mode) .new-tab-button,
 :global(.dark-mode) .new-private-tab-button {
   color: #8ab4f8;
 }
 
-:global(.dark-mode) .new-tab-button:hover, 
+:global(.dark-mode) .new-tab-button:hover,
 :global(.dark-mode) .new-private-tab-button:hover {
   background-color: #3c4043;
 }

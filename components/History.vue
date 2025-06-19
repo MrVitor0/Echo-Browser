@@ -3,38 +3,50 @@
     <div class="history-header">
       <h2>Histórico</h2>
       <div class="history-search-container">
-        <input 
-          type="text" 
+        <input
           v-model="searchQuery"
+          type="text"
           placeholder="Pesquisar no histórico"
           class="history-search"
         >
-        <button 
-          @click="clearHistory" 
-          class="clear-history-btn" 
+        <button
+          class="clear-history-btn"
           title="Limpar todo o histórico"
+          @click="clearHistory"
         >
           Limpar histórico
         </button>
       </div>
     </div>
-    
+
     <div v-if="filteredHistory.length === 0" class="empty-history">
-      <p>{{ searchQuery ? 'Nenhum resultado encontrado.' : 'Seu histórico está vazio.' }}</p>
+      <p>
+        {{
+          searchQuery
+            ? "Nenhum resultado encontrado."
+            : "Seu histórico está vazio."
+        }}
+      </p>
     </div>
-    
+
     <div v-else class="history-items">
-      <div v-for="(group, date) in groupedHistory" :key="date" class="history-group">
+      <div
+        v-for="(group, date) in groupedHistory"
+        :key="date"
+        class="history-group"
+      >
         <h3 class="history-date">{{ date }}</h3>
         <div v-for="item in group" :key="item.id" class="history-item">
           <div class="history-item-icon">
-            <img v-if="item.favicon" :src="item.favicon" alt="" class="favicon">
+            <img
+              v-if="item.favicon"
+              :src="item.favicon"
+              alt=""
+              class="favicon"
+            >
             <span v-else class="default-icon">🌐</span>
           </div>
-          <div 
-            class="history-item-content" 
-            @click="navigateToUrl(item.url)"
-          >
+          <div class="history-item-content" @click="navigateToUrl(item.url)">
             <div class="history-item-title">{{ item.title }}</div>
             <div class="history-item-url">{{ item.url }}</div>
             <div class="history-item-time">
@@ -44,10 +56,10 @@
               </span>
             </div>
           </div>
-          <button 
-            @click="removeItem(item.id)" 
+          <button
             class="remove-item-btn"
             title="Remover do histórico"
+            @click="removeItem(item.id)"
           >
             ×
           </button>
@@ -58,8 +70,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useHistory, type HistoryItem } from '../composables/useHistory';
+import { ref, computed } from "vue";
+import { useHistory, type HistoryItem } from "../composables/useHistory";
 
 // Props e emits
 const emit = defineEmits<{
@@ -67,28 +79,30 @@ const emit = defineEmits<{
   close: [];
 }>();
 
+defineOptions({
+  name: "HistoryPage",
+});
+
 // Estado local
-const searchQuery = ref('');
+const searchQuery = ref("");
 
 // Usar o composable de histórico
-const { 
-  getHistory, 
-  removeFromHistory, 
+const {
+  getHistory,
+  removeFromHistory,
   clearHistory: clearAllHistory,
-  searchHistory 
+  searchHistory,
 } = useHistory();
 
 // História filtrada com base na pesquisa
 const filteredHistory = computed(() => {
-  return searchQuery.value 
-    ? searchHistory(searchQuery.value)
-    : getHistory();
+  return searchQuery.value ? searchHistory(searchQuery.value) : getHistory();
 });
 
 // Agrupar histórico por data
 const groupedHistory = computed(() => {
   const groups: Record<string, HistoryItem[]> = {};
-  
+
   for (const item of filteredHistory.value) {
     const date = formatDate(item.lastVisitedAt);
     if (!groups[date]) {
@@ -96,14 +110,14 @@ const groupedHistory = computed(() => {
     }
     groups[date].push(item);
   }
-  
+
   return groups;
 });
 
 // Navegar para uma URL
 function navigateToUrl(url: string): void {
-  emit('navigate', url);
-  emit('close');
+  emit("navigate", url);
+  emit("close");
 }
 
 // Remover um item do histórico
@@ -113,7 +127,7 @@ function removeItem(id: string): void {
 
 // Limpar todo o histórico
 function clearHistory(): void {
-  if (confirm('Tem certeza que deseja limpar todo o histórico?')) {
+  if (confirm("Tem certeza que deseja limpar todo o histórico?")) {
     clearAllHistory();
   }
 }
@@ -124,17 +138,17 @@ function formatDate(timestamp: number): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  
+
   if (isSameDay(date, today)) {
-    return 'Hoje';
+    return "Hoje";
   } else if (isSameDay(date, yesterday)) {
-    return 'Ontem';
+    return "Ontem";
   } else {
-    return date.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+    return date.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     });
   }
 }
@@ -151,9 +165,9 @@ function isSameDay(date1: Date, date2: Date): boolean {
 // Formata a hora
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
-  return date.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit'
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 </script>

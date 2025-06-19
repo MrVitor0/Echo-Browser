@@ -3,7 +3,9 @@
     <div class="error-container">
       <div class="error-icon">🔍</div>
       <h1>{{ title }}</h1>
-      <p>Não foi possível carregar a página: <strong>{{ url }}</strong></p>
+      <p>
+        Não foi possível carregar a página: <strong>{{ url }}</strong>
+      </p>
       <p v-if="errorCode">Código de erro: {{ errorCode }}</p>
       <div class="error-suggestions">
         <p>Sugestões:</p>
@@ -14,8 +16,10 @@
         </ul>
       </div>
       <div class="error-actions">
-        <button class="action-button" @click="goBack" >Voltar</button>
-        <button class="action-button primary" @click="retry" >Tentar novamente</button>
+        <button class="action-button" @click="goBack">Voltar</button>
+        <button class="action-button primary" @click="retry">
+          Tentar novamente
+        </button>
       </div>
     </div>
   </div>
@@ -30,7 +34,7 @@ const props = defineProps<{
 }>();
 
 // Valor padrão para título
-const title = props.title || 'Página não encontrada';
+const title = props.title || "Página não encontrada";
 
 // Métodos
 function goBack(): void {
@@ -44,7 +48,13 @@ function retry(): void {
 
 <style scoped>
 .error-page {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   margin: 0;
   padding: 0;
   display: flex;

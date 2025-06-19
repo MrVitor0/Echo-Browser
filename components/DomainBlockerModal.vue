@@ -3,76 +3,80 @@
     <div class="blocker-header">
       <h2>Gerenciar Bloqueador de Anúncios</h2>
       <p>{{ activeDomainsCount }} domínios ativos</p>
-      
+
       <div class="blocker-actions">
-        <input 
-          type="text" 
-          v-model="newDomain" 
-          placeholder="Adicionar domínio (ex: ads.example.com)" 
-          class="domain-input" 
+        <input
+          v-model="newDomain"
+          type="text"
+          placeholder="Adicionar domínio (ex: ads.example.com)"
+          class="domain-input"
           @keyup.enter="addDomain"
         >
-        <button @click="addDomain" class="add-domain-btn">Adicionar</button>
+        <button class="add-domain-btn" @click="addDomain">Adicionar</button>
       </div>
-      
+
       <div class="search-container">
-        <input 
-          type="text" 
-          v-model="searchQuery" 
-          placeholder="Buscar domínios" 
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Buscar domínios"
           class="search-input"
         >
       </div>
     </div>
-    
+
     <div class="domains-container">
       <div v-if="filteredDomains.length === 0" class="empty-list">
-        <p v-if="searchQuery">Nenhum resultado encontrado para "{{ searchQuery }}"</p>
+        <p v-if="searchQuery">
+          Nenhum resultado encontrado para "{{ searchQuery }}"
+        </p>
         <p v-else>Nenhum domínio bloqueado</p>
       </div>
-      
+
       <div v-else class="domains-list">
-        <div 
-          v-for="domain in filteredDomains" 
-          :key="domain.id" 
+        <div
+          v-for="domain in filteredDomains"
+          :key="domain.id"
           class="domain-item"
-          :class="{ 'disabled': !domain.enabled }"
+          :class="{ disabled: !domain.enabled }"
         >
           <div class="domain-toggle">
-            <input 
-              type="checkbox" 
-              :id="`domain-${domain.id}`" 
-              :checked="domain.enabled" 
+            <input
+              :id="`domain-${domain.id}`"
+              type="checkbox"
+              :checked="domain.enabled"
               @change="() => toggleDomain(domain.id)"
             >
-            <label :for="`domain-${domain.id}`"></label>
+            <label :for="`domain-${domain.id}`" />
           </div>
-          
+
           <div class="domain-name" :title="domain.domain">
             {{ domain.domain }}
           </div>
-          
-          <button 
-            @click="removeDomain(domain.id)" 
+
+          <button
             class="remove-domain-btn"
             title="Remover domínio"
+            @click="removeDomain(domain.id)"
           >
             ×
           </button>
         </div>
       </div>
     </div>
-    
+
     <div class="blocker-footer">
-      <button @click="importPopularList" class="import-btn">Importar Lista Popular</button>
-      <button @click="$emit('close')" class="close-btn">Fechar</button>
+      <button class="import-btn" @click="importPopularList">
+        Importar Lista Popular
+      </button>
+      <button class="close-btn" @click="$emit('close')">Fechar</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { useBlockedDomains } from '../composables/useBlockedDomains';
+import { ref, computed } from "vue";
+import { useBlockedDomains } from "../composables/useBlockedDomains";
 
 // Props do componente
 defineProps<{
@@ -80,28 +84,28 @@ defineProps<{
 }>();
 
 // Emits
-defineEmits(['close']);
+defineEmits(["close"]);
 
 // Estado local
-const newDomain = ref('');
-const searchQuery = ref('');
+const newDomain = ref("");
+const searchQuery = ref("");
 
 // Usar o composable de domínios bloqueados
-const { 
-  blockedDomains, 
-  addBlockedDomain, 
-  removeBlockedDomain, 
+const {
+  blockedDomains,
+  addBlockedDomain,
+  removeBlockedDomain,
   toggleDomainStatus,
   importBlocklist,
-  getBlockedDomainsCount
+  getBlockedDomainsCount,
 } = useBlockedDomains();
 
 // Computed para domínios filtrados com base na pesquisa
 const filteredDomains = computed(() => {
   if (!searchQuery.value) return blockedDomains.value;
-  
+
   const query = searchQuery.value.toLowerCase();
-  return blockedDomains.value.filter(domain => 
+  return blockedDomains.value.filter((domain) =>
     domain.domain.toLowerCase().includes(query)
   );
 });
@@ -112,9 +116,9 @@ const activeDomainsCount = computed(() => getBlockedDomainsCount());
 // Adicionar novo domínio
 function addDomain(): void {
   if (!newDomain.value.trim()) return;
-  
+
   addBlockedDomain(newDomain.value);
-  newDomain.value = '';
+  newDomain.value = "";
 }
 
 // Remover domínio
@@ -129,38 +133,38 @@ function toggleDomain(id: string): void {
 
 // Lista popular de bloqueio de anúncios
 const popularBlocklist = [
-  'ads.google.com',
-  'adservice.google.com',
-  'pagead2.googlesyndication.com',
-  'googleadservices.com',
-  'ad.doubleclick.net',
-  'static.doubleclick.net',
-  'www.googleadservices.com',
-  'securepubads.g.doubleclick.net',
-  'analytics.google.com',
-  'google-analytics.com',
-  'ssl.google-analytics.com',
-  'www.google-analytics.com',
-  'adwords.google.com',
-  'tpc.googlesyndication.com',
-  'ads-twitter.com',
-  'ads.linkedin.com',
-  'ads.yahoo.com',
-  'ads.amazon.com',
-  'tracking.amazon.com',
-  'analytics.facebook.com',
-  'ads.facebook.com',
-  'an.facebook.com',
-  'ads.pinterest.com',
-  'analytics.pinterest.com',
-  'ads.reddit.com',
-  'analytics.reddit.com',
-  'ads.youtube.com',
-  'ads.tiktok.com',
-  'analytics.tiktok.com',
-  'bat.bing.com',
-  'linkedin.com/analytics',
-  'metrics.apple.com'
+  "ads.google.com",
+  "adservice.google.com",
+  "pagead2.googlesyndication.com",
+  "googleadservices.com",
+  "ad.doubleclick.net",
+  "static.doubleclick.net",
+  "www.googleadservices.com",
+  "securepubads.g.doubleclick.net",
+  "analytics.google.com",
+  "google-analytics.com",
+  "ssl.google-analytics.com",
+  "www.google-analytics.com",
+  "adwords.google.com",
+  "tpc.googlesyndication.com",
+  "ads-twitter.com",
+  "ads.linkedin.com",
+  "ads.yahoo.com",
+  "ads.amazon.com",
+  "tracking.amazon.com",
+  "analytics.facebook.com",
+  "ads.facebook.com",
+  "an.facebook.com",
+  "ads.pinterest.com",
+  "analytics.pinterest.com",
+  "ads.reddit.com",
+  "analytics.reddit.com",
+  "ads.youtube.com",
+  "ads.tiktok.com",
+  "analytics.tiktok.com",
+  "bat.bing.com",
+  "linkedin.com/analytics",
+  "metrics.apple.com",
 ];
 
 // Importar lista popular de domínios bloqueados
@@ -385,7 +389,10 @@ function importPopularList(): void {
   border-color: #5f6368;
 }
 
-:global(.dark-mode) .domain-toggle input[type="checkbox"]:checked + label::after {
+:global(.dark-mode)
+  .domain-toggle
+  input[type="checkbox"]:checked
+  + label::after {
   color: #8ab4f8;
 }
 

@@ -1,42 +1,30 @@
-import type { Ref } from 'vue';
-import { useTabs } from '../composables/useTabs';
-import { useFavorites } from '../composables/useFavorites';
-import { useBlockedDomains } from '../composables/useBlockedDomains';
-import { useHistory } from '../composables/useHistory';
-import type { WebViewElement } from '../types/electron';
-
-// Interface para o elemento WebView do Electron
-export interface WebViewElement extends HTMLElement {
-  canGoBack: () => boolean;
-  canGoForward: () => boolean;
-  getURL: () => string;
-  getTitle: () => string;
-  reload: () => void;
-  goBack: () => void;
-  goForward: () => void;
-  loadURL: (url: string) => void;
-}
+import type { Ref } from "vue";
+import { useTabs } from "../composables/useTabs";
+import { useFavorites } from "../composables/useFavorites";
+import { useBlockedDomains } from "../composables/useBlockedDomains";
+import { useHistory } from "../composables/useHistory";
 
 // Eventos possíveis do WebView
-export type WebViewEvent = 
-  | 'did-start-loading' 
-  | 'did-stop-loading' 
-  | 'did-navigate' 
-  | 'did-navigate-in-page' 
-  | 'dom-ready' 
-  | 'page-title-updated'
-  | 'page-favicon-updated';
+export type WebViewEvent =
+  | "did-start-loading"
+  | "did-stop-loading"
+  | "did-navigate"
+  | "did-navigate-in-page"
+  | "dom-ready"
+  | "page-title-updated"
+  | "page-favicon-updated";
 
 export class WebViewManager {
   private webviews: Map<string, WebViewElement> = new Map();
   private readonly currentUrlRef: Ref<string>;
-  private readonly defaultSearchEngine: string = 'https://www.google.com/search?q=';
+  private readonly defaultSearchEngine: string =
+    "https://www.google.com/search?q=";
   private readonly tabsManager = useTabs();
   private readonly favoritesManager = useFavorites();
   private readonly blockedDomainsManager = useBlockedDomains();
   private readonly historyManager = useHistory();
   private isDarkMode: Ref<boolean>; // Referência para tema escuro
-  
+
   constructor(currentUrlRef: Ref<string>, isDarkMode: Ref<boolean>) {
     this.currentUrlRef = currentUrlRef;
     this.isDarkMode = isDarkMode;
@@ -49,31 +37,34 @@ export class WebViewManager {
   private getActiveWebview(): WebViewElement | null {
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return null;
-    
+
     return this.webviews.get(activeTabId) || null;
   }
 
   /**
    * Inicializa um webview para uma tab específica
    */
-  public initializeWebview(tabId: string, webviewElement: WebViewElement): void {
+  public initializeWebview(
+    tabId: string,
+    webviewElement: WebViewElement
+  ): void {
     this.webviews.set(tabId, webviewElement);
-    
+
     // Obter a tab para verificar se é privada
     const tab = this.tabsManager.getTabById(tabId);
-    
+
     // Configurar modo de partição para navegação privada
     if (tab?.isPrivate) {
       // Configura uma partição única para cada aba privada para evitar compartilhamento de cookies
       const partition = `private-${tabId}`;
-      webviewElement.setAttribute('partition', partition);
-      
+      webviewElement.setAttribute("partition", partition);
+
       // Configura webview para modo privado
-      webviewElement.setAttribute('allowpopups', 'true');
+      webviewElement.setAttribute("allowpopups", "true");
     }
-    
+
     this.setupEventListeners(tabId, webviewElement);
-    
+
     // Se esta for a tab ativa, atualize a barra de URL
     const activeTabId = this.tabsManager.getActiveTabId();
     if (activeTabId === tabId) {
@@ -97,24 +88,27 @@ export class WebViewManager {
   /**
    * Configura os event listeners para um webview específico
    */
-  private setupEventListeners(tabId: string, webviewElement: WebViewElement): void {
+  private setupEventListeners(
+    tabId: string,
+    webviewElement: WebViewElement
+  ): void {
     // Evento para limpar erros quando a navegação começar
-    webviewElement.addEventListener('did-start-loading', () => {
+    webviewElement.addEventListener("did-start-loading", () => {
       this.tabsManager.setTabError(tabId, undefined);
       this.tabsManager.updateTabLoadingState(tabId, true);
     });
 
     // Evento para quando terminar de carregar uma página com sucesso
-    webviewElement.addEventListener('did-stop-loading', () => {
+    webviewElement.addEventListener("did-stop-loading", () => {
       this.tabsManager.updateTabLoadingState(tabId, false);
-      
+
       // Verifica se não é uma página de erro ou data URL
       const url = webviewElement.getURL();
-      if (!url.startsWith('data:')) {
+      if (!url.startsWith("data:")) {
         try {
           const title = webviewElement.getTitle();
           const favicon = this.tabsManager.getTabById(tabId)?.favicon;
-          
+
           // Verifica se a tab é privada antes de adicionar ao histórico
           const tab = this.tabsManager.getTabById(tabId);
           if (tab && !tab.isPrivate) {
@@ -122,19 +116,19 @@ export class WebViewManager {
             this.historyManager.addToHistory(url, title, favicon);
           }
         } catch (err) {
-          console.error('Erro ao adicionar página ao histórico:', err);
+          console.error("Erro ao adicionar página ao histórico:", err);
         }
       }
     });
 
     // Evento para quando a URL mudar
-    webviewElement.addEventListener('did-navigate', () => {
+    webviewElement.addEventListener("did-navigate", () => {
       const url = webviewElement.getURL();
-      
+
       // Só atualiza a URL se não for uma data URL
-      if (!url.startsWith('data:')) {
+      if (!url.startsWith("data:")) {
         this.tabsManager.updateTabUrl(tabId, url);
-        
+
         // Atualiza a URL na barra de endereço se esta tab estiver ativa
         const activeTab = this.tabsManager.getActiveTab();
         if (activeTab && activeTab.id === tabId) {
@@ -144,10 +138,11 @@ export class WebViewManager {
     });
 
     // Título da página foi atualizado
-    webviewElement.addEventListener('page-title-updated', (e: any) => {
-      const title = e.title || 'Sem título';
+    webviewElement.addEventListener("page-title-updated", (e: Event) => {
+      const customEvent = e as unknown as { title: string };
+      const title = customEvent.title || "Sem título";
       this.tabsManager.updateTabTitle(tabId, title);
-      
+
       // Também atualiza o título do favorito, se existir
       const url = webviewElement.getURL();
       if (this.favoritesManager.isFavorite(url)) {
@@ -159,11 +154,15 @@ export class WebViewManager {
     });
 
     // Favicon foi atualizado
-    webviewElement.addEventListener('page-favicon-updated', (e: any) => {
-      if (e.favicons && e.favicons.length > 0) {
-        const favicon = e.favicons[0];
+    interface PageFaviconUpdatedEvent {
+      favicons: string[];
+    }
+    webviewElement.addEventListener("page-favicon-updated", (e: Event) => {
+      const event = e as unknown as PageFaviconUpdatedEvent;
+      if (event.favicons && event.favicons.length > 0) {
+        const favicon = event.favicons[0];
         this.tabsManager.updateTabFavicon(tabId, favicon);
-        
+
         // Também atualiza o favicon do favorito, se existir
         const url = webviewElement.getURL();
         if (this.favoritesManager.isFavorite(url)) {
@@ -176,65 +175,75 @@ export class WebViewManager {
     });
 
     // Evento de erro de carregamento
-    webviewElement.addEventListener('did-fail-load', (e: WebviewNavigationEvent) => {
-      const { errorCode, errorDescription, validatedURL } = e;
-      
-      // Ignora os erros que não são relevantes 
-      // -3 é cancelamento, -6 é "file not found" que acontece durante redirecionamentos normais
-      if (errorCode !== -3 && errorCode !== -6) {
-        console.log(`Erro ao carregar ${validatedURL}: ${errorCode} - ${errorDescription}`);
-        
-        // Atualiza o estado da tab
-        this.tabsManager.updateTabLoadingState(tabId, false);
-        this.tabsManager.updateTabTitle(tabId, 'Erro de carregamento');
-        
-        // Registra o erro na tab
-        this.tabsManager.setTabError(tabId, {
-          code: errorCode ?? 0,
-          url: validatedURL || '',
-          description: errorDescription
-        });
-        
-        // Garantir que a URL original permanece na URL bar
-        if (this.tabsManager.getActiveTabId() === tabId) {
-          this.currentUrlRef.value = validatedURL || '';
+    webviewElement.addEventListener(
+      "did-fail-load",
+      (e: WebviewNavigationEvent) => {
+        const { errorCode, errorDescription, validatedURL } = e;
+
+        // Ignora os erros que não são relevantes
+        // -3 é cancelamento, -6 é "file not found" que acontece durante redirecionamentos normais
+        if (errorCode !== -3 && errorCode !== -6) {
+          console.log(
+            `Erro ao carregar ${validatedURL}: ${errorCode} - ${errorDescription}`
+          );
+
+          // Atualiza o estado da tab
+          this.tabsManager.updateTabLoadingState(tabId, false);
+          this.tabsManager.updateTabTitle(tabId, "Erro de carregamento");
+
+          // Registra o erro na tab
+          this.tabsManager.setTabError(tabId, {
+            code: errorCode ?? 0,
+            url: validatedURL || "",
+            description: errorDescription,
+          });
+
+          // Garantir que a URL original permanece na URL bar
+          if (this.tabsManager.getActiveTabId() === tabId) {
+            this.currentUrlRef.value = validatedURL || "";
+          }
         }
       }
-    });
+    );
 
     // Mais eventos para manter o estado de navegação atualizado
-    ['did-navigate-in-page', 'dom-ready'].forEach(event => {
+    ["did-navigate-in-page", "dom-ready"].forEach((event) => {
       webviewElement.addEventListener(event, () => {
         this.updateTabNavigationState(tabId, webviewElement);
       });
     });
-    
+
     // Configurar bloqueio de domínios
     this.setupDomainBlocker(webviewElement);
   }
-  
+
   /**
    * Configura o bloqueador de domínios para o webview
    */
   private setupDomainBlocker(webviewElement: WebViewElement): void {
     // Intercepta solicitações de carregamento de recursos
-    webviewElement.addEventListener('will-navigate', (e: any) => {
-      const url = e.url;
-      
+    interface WillNavigateEvent {
+      url: string;
+      preventDefault: () => void;
+    }
+    webviewElement.addEventListener("will-navigate", (e: Event) => {
+      const event = e as unknown as WillNavigateEvent;
+      const url = event.url;
+
       if (this.blockedDomainsManager.isDomainBlocked(url)) {
         // Cancela a navegação para domínios bloqueados
-        e.preventDefault();
+        event.preventDefault();
         console.log(`[Bloqueador] Navegação bloqueada para: ${url}`);
       }
     });
-    
+
     // Bloqueia também recursos carregados em frames
-    webviewElement.addEventListener('did-start-loading', () => {
+    webviewElement.addEventListener("did-start-loading", () => {
       // Injeta código para bloquear requisições
       const blockedDomains = this.blockedDomainsManager.blockedDomains.value
-        .filter(domain => domain.enabled)
-        .map(domain => domain.domain);
-        
+        .filter((domain) => domain.enabled)
+        .map((domain) => domain.domain);
+
       const script = `
         // Lista de domínios bloqueados
         const blockedDomains = ${JSON.stringify(blockedDomains)};
@@ -300,24 +309,30 @@ export class WebViewManager {
         
         console.log('[Bloqueador] Inicializado com', blockedDomains.length, 'domínios bloqueados');
       `;
-      
+
       // Executa o script no contexto da página
-      webviewElement.executeJavaScript(script)
-        .catch(err => console.error("Erro ao injetar bloqueador:", err));
+      webviewElement
+        .executeJavaScript(script as string)
+        .catch((err: unknown) =>
+          console.error("Erro ao injetar bloqueador:", err)
+        );
     });
   }
 
   /**
    * Atualiza o estado de navegação (botões voltar/avançar) de uma tab
    */
-  private updateTabNavigationState(tabId: string, webviewElement: WebViewElement): void {
+  private updateTabNavigationState(
+    tabId: string,
+    webviewElement: WebViewElement
+  ): void {
     try {
       const canGoBack = webviewElement.canGoBack();
       const canGoForward = webviewElement.canGoForward();
-      
+
       this.tabsManager.updateTabNavigationState(tabId, canGoBack, canGoForward);
     } catch (err) {
-      console.error('Erro ao atualizar estado de navegação da tab:', err);
+      console.error("Erro ao atualizar estado de navegação da tab:", err);
     }
   }
 
@@ -329,21 +344,31 @@ export class WebViewManager {
     if (/^https?:\/\//i.test(text)) {
       return true;
     }
-    
+
     // Verifica se é um domínio válido (com pelo menos um ponto)
-    const domainRegex = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i;
-    
+    const domainRegex =
+      /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i;
+
     // Se parece com um domínio válido
     if (domainRegex.test(text)) {
       return true;
     }
-    
+
     // Casos comuns específicos
-    const commonDomains = ['.com', '.org', '.net', '.edu', '.gov', '.io', '.dev', '.app'];
-    if (commonDomains.some(domain => text.includes(domain))) {
+    const commonDomains = [
+      ".com",
+      ".org",
+      ".net",
+      ".edu",
+      ".gov",
+      ".io",
+      ".dev",
+      ".app",
+    ];
+    if (commonDomains.some((domain) => text.includes(domain))) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -353,20 +378,20 @@ export class WebViewManager {
   public navigateToURL(text: string): void {
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
+
     const webviewElement = this.webviews.get(activeTabId);
     if (!webviewElement) return;
 
     try {
       const input = text.trim();
       if (!input) return;
-      
+
       let finalUrl: string;
-      
+
       if (this.isValidUrl(input)) {
         // É uma URL válida, formata corretamente
         finalUrl = /^https?:\/\//i.test(input) ? input : `https://${input}`;
-        
+
         // Verifica se o domínio está bloqueado
         if (this.blockedDomainsManager.isDomainBlocked(finalUrl)) {
           console.log(`[Bloqueador] Navegação bloqueada para: ${finalUrl}`);
@@ -375,21 +400,21 @@ export class WebViewManager {
       } else {
         // Não é URL, pesquisa no Google
         // Adicionar parâmetro de tema baseado na preferência atual
-        const themeParam = this.isDarkMode.value ? '&cs=1' : '';
+        const themeParam = this.isDarkMode.value ? "&cs=1" : "";
         finalUrl = `${this.defaultSearchEngine}${encodeURIComponent(input)}${themeParam}`;
       }
-      
+
       // Limpa qualquer erro anterior
       this.tabsManager.clearTabError(activeTabId);
-      
+
       // Atualiza a URL imediatamente para evitar qualquer inconsistência
       this.tabsManager.updateTabUrl(activeTabId, finalUrl);
       this.currentUrlRef.value = finalUrl;
-      
+
       // Tenta navegar para a URL
       webviewElement.loadURL(finalUrl);
     } catch (err) {
-      console.error('Erro ao navegar para a URL ou realizar pesquisa:', err);
+      console.error("Erro ao navegar para a URL ou realizar pesquisa:", err);
     }
   }
 
@@ -399,10 +424,10 @@ export class WebViewManager {
   public retryLoadingPage(tabId: string): void {
     const tab = this.tabsManager.getTabById(tabId);
     if (!tab) return;
-    
+
     const webviewElement = this.webviews.get(tabId);
     if (!webviewElement) return;
-    
+
     // Limpa o erro e tenta carregar a URL novamente
     this.tabsManager.clearTabError(tabId);
     webviewElement.loadURL(tab.url);
@@ -414,13 +439,13 @@ export class WebViewManager {
   public reload(): void {
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
+
     const tab = this.tabsManager.getTabById(activeTabId);
     if (!tab) return;
 
     const webviewElement = this.webviews.get(activeTabId);
     if (!webviewElement) return;
-    
+
     try {
       // Se há um erro, tenta recarregar a URL original em vez de recarregar a página de erro
       if (tab.error) {
@@ -430,7 +455,7 @@ export class WebViewManager {
         webviewElement.reload();
       }
     } catch (err) {
-      console.error('Erro ao recarregar página:', err);
+      console.error("Erro ao recarregar página:", err);
     }
   }
 
@@ -440,10 +465,10 @@ export class WebViewManager {
   public goBack(): void {
     const webviewElement = this.getActiveWebview();
     if (!webviewElement) return;
-    
+
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
+
     try {
       if (webviewElement.canGoBack()) {
         webviewElement.goBack();
@@ -455,7 +480,7 @@ export class WebViewManager {
         }, 100);
       }
     } catch (err) {
-      console.error('Erro ao voltar página:', err);
+      console.error("Erro ao voltar página:", err);
     }
   }
 
@@ -465,10 +490,10 @@ export class WebViewManager {
   public goForward(): void {
     const webviewElement = this.getActiveWebview();
     if (!webviewElement) return;
-    
+
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return;
-    
+
     try {
       if (webviewElement.canGoForward()) {
         webviewElement.goForward();
@@ -480,7 +505,7 @@ export class WebViewManager {
         }, 100);
       }
     } catch (err) {
-      console.error('Erro ao avançar página:', err);
+      console.error("Erro ao avançar página:", err);
     }
   }
 
@@ -490,10 +515,10 @@ export class WebViewManager {
   public isCurrentUrlFavorite(): boolean {
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return false;
-    
+
     const tab = this.tabsManager.getTabById(activeTabId);
     if (!tab) return false;
-    
+
     return this.favoritesManager.isFavorite(tab.url);
   }
 
@@ -503,12 +528,12 @@ export class WebViewManager {
   public toggleFavorite(): boolean {
     const activeTabId = this.tabsManager.getActiveTabId();
     if (!activeTabId) return false;
-    
+
     const tab = this.tabsManager.getTabById(activeTabId);
     if (!tab) return false;
-    
+
     const isFav = this.favoritesManager.isFavorite(tab.url);
-    
+
     if (isFav) {
       // Encontrar e remover o favorito
       const favorite = this.favoritesManager.getFavoriteByUrl(tab.url);

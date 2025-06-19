@@ -3,7 +3,9 @@
     <div class="error-container">
       <div class="error-icon">🔍</div>
       <h1>{{ title }}</h1>
-      <p>Não foi possível carregar a página: <strong>{{ url }}</strong></p>
+      <p>
+        Não foi possível carregar a página: <strong>{{ url }}</strong>
+      </p>
       <p v-if="errorCode">Código de erro: {{ errorCode }}</p>
       <div class="error-suggestions">
         <p>Sugestões:</p>
@@ -14,8 +16,10 @@
         </ul>
       </div>
       <div class="error-actions">
-        <button class="action-button" @click="goBack" >Voltar</button>
-        <button class="action-button primary" @click="retry" >Tentar novamente</button>
+        <button class="action-button" @click="goBack">Voltar</button>
+        <button class="action-button primary" @click="retry">
+          Tentar novamente
+        </button>
       </div>
     </div>
   </div>
@@ -38,11 +42,11 @@ const emit = defineEmits<{
 
 // Métodos para as ações
 function goBack(): void {
-  emit('back');
+  emit("back");
 }
 
 function retry(): void {
-  emit('retry');
+  emit("retry");
 }
 </script>
 
@@ -54,7 +58,13 @@ function retry(): void {
   align-items: center;
   justify-content: center;
   background-color: #f5f5f5;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 
 .error-container {

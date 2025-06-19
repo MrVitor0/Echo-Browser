@@ -26,4 +26,15 @@ declare global {
     url?: string;
     validatedURL?: string;
   }
+  interface WebViewElement extends HTMLElement {
+    canGoBack: () => boolean;
+    canGoForward: () => boolean;
+    getURL: () => string;
+    getTitle: () => string;
+    reload: () => void;
+    goBack: () => void;
+    goForward: () => void;
+    loadURL: (url: string) => void;
+    executeJavaScript: (code: string) => Promise<unknown>;
+  }
 }

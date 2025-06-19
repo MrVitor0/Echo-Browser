@@ -1,8 +1,11 @@
 <template>
-  <div class="browser-container" :class="{ 
-    'private-mode': activeTab?.isPrivate,
-    'dark-mode': isDarkMode 
-  }">
+  <div
+    class="browser-container"
+    :class="{
+      'private-mode': activeTab?.isPrivate,
+      'dark-mode': isDarkMode,
+    }"
+  >
     <!-- Container de tabs -->
     <TabsContainer :is-dark-mode="isDarkMode" />
 
@@ -12,11 +15,13 @@
         <span class="private-icon">🔒</span>
         <span class="private-text">Navegação privada</span>
       </div>
-      
+
       <button :disabled="!activeTab?.canGoBack" @click="handleGoBack">←</button>
-      <button :disabled="!activeTab?.canGoForward" @click="handleGoForward">→</button>
+      <button :disabled="!activeTab?.canGoForward" @click="handleGoForward">
+        →
+      </button>
       <button @click="handleReload">⟳</button>
-      <div class="url-bar-container ">
+      <div class="url-bar-container">
         <input
           ref="urlBarRef"
           class="url-bar"
@@ -28,7 +33,7 @@
           @keydown.up.prevent="handleSuggestionNavUp"
           @blur="handleUrlBarBlur"
           @focus="handleUrlBarFocus"
-        >
+        />
         <!-- Componente de sugestões -->
         <SearchSuggestions
           :suggestions="suggestions"
@@ -43,8 +48,12 @@
       </div>
       <button
         class="favorite-button"
-        :class="{ 'active': isCurrentFavorite }"
-        :title="isCurrentFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'"
+        :class="{ active: isCurrentFavorite }"
+        :title="
+          isCurrentFavorite
+            ? 'Remover dos favoritos'
+            : 'Adicionar aos favoritos'
+        "
         @click="toggleFavorite"
       >
         ★
@@ -61,7 +70,7 @@
         :title="isDarkMode ? 'Mudar para tema claro' : 'Mudar para tema escuro'"
         @click="toggleDarkMode"
       >
-        {{ isDarkMode ? '☀️' : '🌙' }}
+        {{ isDarkMode ? "☀️" : "🌙" }}
       </button>
       <button
         class="ad-blocker-button"
@@ -73,7 +82,7 @@
       <button
         class="toggle-favorites-button"
         title="Mostrar/esconder favoritos"
-        :class="{ 'active': showFavoritesBar }"
+        :class="{ active: showFavoritesBar }"
         @click="toggleFavoritesBar"
       >
         ☰
@@ -113,7 +122,7 @@
           ref="webviewRefs"
           class="webview-content"
           :src="tab.url"
-          @dom-ready="(event) => handleWebviewReady(event, tab.id)"
+          @dom-ready="(event: Event) => handleWebviewReady(event, tab.id)"
         />
       </div>
     </div>
@@ -140,11 +149,13 @@
     >
       <div class="modal-content">
         <div class="modal-header">
-          <button class="modal-close" @click="showBlockerModal = false">×</button>
+          <button class="modal-close" @click="showBlockerModal = false">
+            ×
+          </button>
         </div>
-        <DomainBlockerModal 
+        <DomainBlockerModal
           :is-dark-mode="isDarkMode"
-          @close="showBlockerModal = false" 
+          @close="showBlockerModal = false"
         />
       </div>
     </div>
@@ -164,8 +175,8 @@ import { useTabs } from "./composables/useTabs";
 import { useFavorites } from "./composables/useFavorites";
 import { useSuggestions } from "./composables/useSuggestions";
 import { useBlockedDomains } from "./composables/useBlockedDomains";
-import { useHistory } from "./composables/useHistory";
 import type { Tab } from "./composables/useTabs";
+
 // Estados reativos
 const urlBarText = ref<string>("https://www.google.com");
 const webviewRefs = ref<Array<HTMLElement>>([]);
@@ -180,7 +191,7 @@ const tabsManager = useTabs();
 const favoritesManager = useFavorites();
 
 // Obtém o gerenciador de domínios bloqueados
-const blockedDomainsManager = useBlockedDomains();
+useBlockedDomains();
 
 // Criação do gerenciador de WebView com tema
 const webViewManager = new WebViewManager(urlBarText, isDarkMode);
@@ -208,7 +219,7 @@ function updateFavoriteStatus(url: string): void {
 const urlBarRef = ref<HTMLInputElement | null>(null);
 
 // Setup do sistema de sugestões
-const { 
+const {
   suggestions,
   loading: loadingSuggestions,
   selectedIndex: selectedSuggestionIndex,
@@ -217,18 +228,18 @@ const {
   selectSuggestion,
   selectPrevious,
   selectNext,
-  clearSuggestions
+  clearSuggestions,
 } = useSuggestions();
 
 // Função para lidar com input na barra de URL
 function handleUrlBarInput(event: Event): void {
   const input = event.target as HTMLInputElement;
   const newValue = input.value;
-  
+
   // Só atualiza e busca se o valor realmente mudou
   if (newValue !== urlBarText.value) {
     urlBarText.value = newValue;
-    
+
     // Busca sugestões apenas se não estiver em uma aba privada
     if (!activeTab.value?.isPrivate) {
       fetchSuggestions(newValue);
@@ -330,7 +341,7 @@ function handleRetry(tabId: string): void {
 
 // Handler para o evento dom-ready do webview
 function handleWebviewReady(event: Event, tabId: string): void {
-  const webview = event.target as HTMLElement;
+  const webview = event.target as WebViewElement;
   webViewManager.initializeWebview(tabId, webview);
 }
 
@@ -339,21 +350,21 @@ function toggleDarkMode(): void {
   isDarkMode.value = !isDarkMode.value;
   // Salva a preferência
   localStorage.setItem("darkMode", isDarkMode.value.toString());
-  
+
   // Aplica o tema ao document para afetar componentes que talvez não tenham acesso direto
   if (isDarkMode.value) {
-    document.documentElement.classList.add('dark-mode');
+    document.documentElement.classList.add("dark-mode");
   } else {
-    document.documentElement.classList.remove('dark-mode');
+    document.documentElement.classList.remove("dark-mode");
   }
 }
 
 // Função para alternar favorito da página atual - Corrigido para salvar título e favicon
 function toggleFavorite(): void {
   if (!activeTab.value) return;
-  
+
   const url = activeTab.value.url;
-  
+
   if (favoritesManager.isFavorite(url)) {
     const favorite = favoritesManager.getFavoriteByUrl(url);
     if (favorite) {
@@ -371,11 +382,6 @@ function toggleFavorite(): void {
   }
 }
 
-// Detectar preferência de tema do sistema
-function detectSystemTheme(): boolean {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
 // Observer para mudanças de tema no sistema
 function setupThemeObserver(): void {
   const callback = (event: MediaQueryListEvent) => {
@@ -383,12 +389,12 @@ function setupThemeObserver(): void {
     webViewManager.setDarkMode(isDarkMode.value);
   };
 
-  const mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQueryList.addEventListener('change', callback);
+  const mediaQueryList = window.matchMedia("(prefers-color-scheme: dark)");
+  mediaQueryList.addEventListener("change", callback);
 
   // Limpeza do listener ao destruir o componente
   onUnmounted(() => {
-    mediaQueryList.removeEventListener('change', callback);
+    mediaQueryList.removeEventListener("change", callback);
   });
 }
 
@@ -400,18 +406,18 @@ onMounted(() => {
 
   // Carregar preferências de UI
   showFavoritesBar.value = localStorage.getItem("showFavoritesBar") === "true";
-  
+
   // Carregar preferência de tema
   isDarkMode.value = localStorage.getItem("darkMode") === "true";
-  
+
   // Aplicar tema global se necessário
   if (isDarkMode.value) {
-    document.documentElement.classList.add('dark-mode');
+    document.documentElement.classList.add("dark-mode");
   }
 
   // Configurar observer para mudanças no tema do sistema
   setupThemeObserver();
-  
+
   // Inicializar o gerenciador de WebView com o tema atual
   webViewManager.setDarkMode(isDarkMode.value);
 });
@@ -435,7 +441,7 @@ function toggleFavoritesBar(): void {
 <style>
 @font-face {
   font-family: "EchoBrowser";
-  src:  url("./assets/fonts/OpenSans-Regular.ttf") format("truetype");
+  src: url("./assets/fonts/OpenSans-Regular.ttf") format("truetype");
   font-display: swap;
   font-weight: normal;
   font-style: normal;
@@ -447,7 +453,15 @@ html {
   padding: 0;
   height: 100%;
   overflow: hidden;
-  font-family: "EchoBrowser", sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "EchoBrowser",
+    sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 .browser-container {
   display: flex;
@@ -580,13 +594,13 @@ html {
 
 /* Estilos para modo privado */
 .private-mode .toolbar {
-  background-color: #37324A;
+  background-color: #37324a;
   color: #e0e0e0;
 }
 
 .private-mode .url-bar.private-input {
-  background-color: #2C2640;
-  border-color: #544D6B;
+  background-color: #2c2640;
+  border-color: #544d6b;
   color: #e0e0e0;
 }
 
@@ -596,7 +610,7 @@ html {
   padding: 0 10px;
   margin-right: 10px;
   border-radius: 4px;
-  background-color: #544D6B;
+  background-color: #544d6b;
   color: #e0e0e0;
 }
 
@@ -613,27 +627,27 @@ html {
 .private-mode .favorite-button,
 .private-mode .toggle-favorites-button,
 .private-mode .history-button {
-  color: #9C89B8;
+  color: #9c89b8;
 }
 
 .private-mode .favorite-button:hover,
 .private-mode .toggle-favorites-button:hover,
 .private-mode .history-button:hover {
-  color: #BEAAE1;
+  color: #beaae1;
 }
 
 .private-mode .favorite-button.active {
-  color: #BEAAE1;
+  color: #beaae1;
 }
 
 .private-mode button {
-  background-color: #544D6B;
+  background-color: #544d6b;
   color: #e0e0e0;
 }
 
 .private-mode button:disabled {
-  background-color: #2C2640;
-  color: #7A718F;
+  background-color: #2c2640;
+  color: #7a718f;
 }
 
 /* Estilos para o container da barra de URL com sugestões */
@@ -655,7 +669,9 @@ html {
   align-items: center;
   justify-content: center;
   color: #777;
-  transition: color 0.2s, transform 0.1s;
+  transition:
+    color 0.2s,
+    transform 0.1s;
 }
 
 .theme-toggle-button:hover {
@@ -675,7 +691,9 @@ html {
   align-items: center;
   justify-content: center;
   color: #777;
-  transition: color 0.2s, transform 0.1s;
+  transition:
+    color 0.2s,
+    transform 0.1s;
 }
 
 .ad-blocker-button:hover {
@@ -694,11 +712,11 @@ html {
 
 /* Estilo para modo privado */
 .private-mode .ad-blocker-button {
-  color: #9C89B8;
+  color: #9c89b8;
 }
 
 .private-mode .ad-blocker-button:hover {
-  color: #BEAAE1;
+  color: #beaae1;
 }
 
 /* Estilos do tema escuro */

@@ -1,35 +1,44 @@
 <template>
-  <div 
+  <div
     class="browser-tab"
-    :class="{ 
-      'active': tab.isActive, 
-      'private': tab.isPrivate, 
-      'dark-mode-tab': isDarkMode 
+    :class="{
+      active: tab.isActive,
+      private: tab.isPrivate,
+      'dark-mode-tab': isDarkMode,
     }"
     @click="handleTabClick"
   >
     <!-- Indicador de navegação privada -->
-    <div v-if="tab.isPrivate" class="private-indicator" title="Navegação privada">
+    <div
+      v-if="tab.isPrivate"
+      class="private-indicator"
+      title="Navegação privada"
+    >
       <span>🔒</span>
     </div>
-    
-    <div class="favicon-container ">
-      <img v-if="tab.favicon" :src="tab.favicon" alt="Favicon" class="favicon-img" />
-      <span v-else class="default-icon">{{ tab.isPrivate ? '🕵️' : '🌐' }}</span>
+
+    <div class="favicon-container">
+      <img
+        v-if="tab.favicon"
+        :src="tab.favicon"
+        alt="Favicon"
+        class="favicon-img"
+      >
+      <span v-else class="default-icon">{{ tab.isPrivate ? "🕵️" : "🌐" }}</span>
     </div>
-    
+
     <div class="tab-title" :title="tab.title">
       {{ tab.title }}
     </div>
-    
-    <div class="tab-loading" v-if="tab.isLoading">
+
+    <div v-if="tab.isLoading" class="tab-loading">
       <span class="loading-spinner">⟳</span>
     </div>
-    
-    <button 
-      class="tab-close" 
-      @click.stop="handleCloseClick"
+
+    <button
       :title="'Fechar ' + tab.title"
+      class="tab-close"
+      @click.stop="handleCloseClick"
     >
       ×
     </button>
@@ -37,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Tab } from '../composables/useTabs';
+import type { Tab } from "../composables/useTabs";
 
 // Define props tipadas
 defineProps<{
@@ -53,11 +62,11 @@ const emit = defineEmits<{
 
 // Handlers de eventos
 function handleTabClick(): void {
-  emit('activate');
+  emit("activate");
 }
 
 function handleCloseClick(): void {
-  emit('close');
+  emit("close");
 }
 </script>
 
@@ -88,22 +97,22 @@ function handleCloseClick(): void {
 
 /* Estilo para abas privadas */
 .browser-tab.private {
-  background-color: #37324A;
+  background-color: #37324a;
   color: #e0e0e0;
 }
 
 .browser-tab.private:hover {
-  background-color: #433D5B;
+  background-color: #433d5b;
 }
 
 .browser-tab.private.active {
-  background-color: #544D6B;
+  background-color: #544d6b;
 }
 
 .private-indicator {
   margin-right: 4px;
   font-size: 10px;
-  color: #9C89B8;
+  color: #9c89b8;
 }
 
 .favicon-container {
@@ -173,9 +182,9 @@ function handleCloseClick(): void {
 }
 .browser-tab.active.dark-mode-tab {
   background-color: #3c4043;
-}   
+}
 .browser-tab.private.dark-mode-tab {
-  background-color: #37324A;
+  background-color: #37324a;
   color: #e0e0e0;
 }
 
@@ -203,16 +212,16 @@ function handleCloseClick(): void {
 
 /* Manter os estilos da aba privada mesmo com tema escuro */
 :global(.dark-mode) .browser-tab.private {
-  background-color: #37324A;
+  background-color: #37324a;
   color: #e0e0e0;
 }
 
 :global(.dark-mode) .browser-tab.private:hover {
-  background-color: #433D5B;
+  background-color: #433d5b;
 }
 
 :global(.dark-mode) .browser-tab.private.active {
-  background-color: #544D6B;
+  background-color: #544d6b;
 }
 
 @keyframes spin {

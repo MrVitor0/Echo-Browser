@@ -1,25 +1,35 @@
 <template>
-  <div 
-    v-show="showSuggestions" 
+  <div
+    v-show="showSuggestions"
     class="suggestions-dropdown"
-    :class="{ 'private': isPrivateMode }"
+    :class="{ private: isPrivateMode }"
   >
     <div v-if="loading" class="suggestions-loading">
-      <div class="loading-spinner"></div>
+      <div class="loading-spinner" />
     </div>
     <ul v-else class="suggestions-list">
       <li
         v-for="(suggestion, index) in suggestions"
         :key="index"
         class="suggestion-item"
-        :class="{ 'selected': index === selectedIndex }"
+        :class="{ selected: index === selectedIndex }"
         @click="handleSuggestionClick(suggestion)"
         @mouseenter="$emit('highlight', index)"
       >
         <div class="suggestion-icon">🔍</div>
         <div class="suggestion-text">
           <!-- Destaca o texto digitado -->
-          <span v-html="highlightMatch(suggestion, currentQuery)"></span>
+          <span>
+            <template
+              v-for="(part, i) in highlightParts(suggestion, currentQuery)"
+              :key="i"
+            >
+              <span v-if="part.highlight" class="highlight">{{
+                part.text
+              }}</span>
+              <span v-else>{{ part.text }}</span>
+            </template>
+          </span>
         </div>
       </li>
     </ul>
@@ -38,31 +48,52 @@ defineProps<{
 }>();
 
 // Define os emits
-const emit = defineEmits<{
+const _emit = defineEmits<{
   select: [suggestion: string];
   highlight: [index: number];
 }>();
 
-// Função para lidar com clique em uma sugestão
-function handleSuggestionClick(suggestion: string): void {
-  emit('select', suggestion);
+/**
+ * Lida com o clique em uma sugestão
+ */
+function handleSuggestionClick(suggestion: string) {
+  _emit("select", suggestion);
 }
 
 /**
- * Destaca o texto que corresponde à consulta na sugestão
+ * Divide a sugestão em partes destacadas e não destacadas
  */
-function highlightMatch(suggestion: string, query: string): string {
-  if (!query || query.trim().length < 1) return suggestion;
+function highlightParts(
+  suggestion: string,
+  query: string
+): Array<{ text: string; highlight: boolean }> {
+  if (!query || query.trim().length < 1)
+    return [{ text: suggestion, highlight: false }];
   try {
-    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(safeQuery, 'gi');
-    return suggestion.replace(regex, (match) => `<span class="highlight">${match}</span>`);
+    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(safeQuery, "gi");
+    const parts: Array<{ text: string; highlight: boolean }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(suggestion)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({
+          text: suggestion.slice(lastIndex, match.index),
+          highlight: false,
+        });
+      }
+      parts.push({ text: match[0], highlight: true });
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < suggestion.length) {
+      parts.push({ text: suggestion.slice(lastIndex), highlight: false });
+    }
+    return parts;
   } catch (error) {
-    console.error('Erro ao destacar texto:', error);
-    return suggestion;
+    console.error("Erro ao destacar texto:", error);
+    return [{ text: suggestion, highlight: false }];
   }
 }
-  
 </script>
 
 <style scoped>
@@ -82,8 +113,8 @@ function highlightMatch(suggestion: string, query: string): string {
 }
 
 .suggestions-dropdown.private {
-  background-color: #2C2640;
-  border-color: #544D6B;
+  background-color: #2c2640;
+  border-color: #544d6b;
 }
 
 .suggestions-list {
@@ -110,7 +141,7 @@ function highlightMatch(suggestion: string, query: string): string {
 
 .suggestions-dropdown.private .suggestion-item:hover,
 .suggestions-dropdown.private .suggestion-item.selected {
-  background-color: #433D5B;
+  background-color: #433d5b;
 }
 
 .suggestion-icon {
@@ -142,13 +173,17 @@ function highlightMatch(suggestion: string, query: string): string {
 }
 
 .suggestions-dropdown.private .loading-spinner {
-  border: 2px solid #37324A;
-  border-top: 2px solid #9C89B8;
+  border: 2px solid #37324a;
+  border-top: 2px solid #9c89b8;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 :deep(.highlight) {
@@ -157,7 +192,7 @@ function highlightMatch(suggestion: string, query: string): string {
 }
 
 .suggestions-dropdown.private :deep(.highlight) {
-  color: #BEAAE1;
+  color: #beaae1;
 }
 
 /* Atualizar os estilos para tema escuro */
@@ -171,7 +206,9 @@ function highlightMatch(suggestion: string, query: string): string {
 }
 
 :global(.dark-mode) .suggestions-dropdown:not(.private) .suggestion-item:hover,
-:global(.dark-mode) .suggestions-dropdown:not(.private) .suggestion-item.selected {
+:global(.dark-mode)
+  .suggestions-dropdown:not(.private)
+  .suggestion-item.selected {
   background-color: #3c4043;
 }
 

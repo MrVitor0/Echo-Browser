@@ -14,19 +14,19 @@ export const SearchSuggestionService = {
     if (!query || query.trim().length < 2) {
       return [];
     }
-    
+
     try {
       // Usa a API do Electron para evitar problemas de CORS
       if (window.electronAPI) {
         const data = await window.electronAPI.getSearchSuggestions(query);
         return data.map((item: { phrase: string }) => item.phrase);
       } else {
-        console.warn('ElectronAPI não disponível para sugestões de pesquisa');
+        console.warn("ElectronAPI não disponível para sugestões de pesquisa");
         return [];
       }
     } catch (error) {
-      console.error('Erro ao buscar sugestões de pesquisa:', error);
+      console.error("Erro ao buscar sugestões de pesquisa:", error);
       return [];
     }
-  }
+  },
 };
